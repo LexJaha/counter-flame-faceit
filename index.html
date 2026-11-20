@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090b10"><meta name="application-version" content="5.0.0"><meta name="description" content="Counter Flame FACEIT v5.0.0 — competitive matchmaking, player profiles and AI match analysis.">
+<title>Counter Flame FACEIT v5.0.0</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+<script>
+/* Counter Flame public client configuration fallback.
+   The publishable/anon key is designed for browser use; database access
+   must still be protected by Supabase Row Level Security policies. */
+window.CF_CONFIG = window.CF_CONFIG || {
+  url: "https://mojzxdlpojwkgplavmwx.supabase.co",
+  anonKey: "sb_publishable_L7p4-oTzRbgOCYxAm2bwrQ_sQwrB7Vj"
+};
+</script>
+<style>
+:root{--bg:#080a0f;--panel:#10151e;--panel2:#151c27;--line:#252e3b;--muted:#8995a6;--text:#f4f6fa;--orange:#ff702e;--orange2:#ff9a58;--green:#43d39e;--red:#ff626e;--shadow:0 24px 70px #0008}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse at 80% -10%,#51230f66,transparent 34%),radial-gradient(ellipse at 0% 70%,#192b3b55,transparent 35%),var(--bg);color:var(--text);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}button,input,textarea,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.48;cursor:not-allowed}.hidden{display:none!important}.muted{color:var(--muted)}.orange{color:var(--orange2)}.eyebrow{font-size:10px;font-weight:900;letter-spacing:2px;color:var(--orange2);text-transform:uppercase}.brand{font-size:17px;letter-spacing:1.5px;font-weight:1000;white-space:nowrap}.brand span{color:var(--orange)}.topbar{height:70px;display:flex;align-items:center;justify-content:space-between;padding:0 30px;border-bottom:1px solid #ffffff10;background:#090c12eF;backdrop-filter:blur(18px);position:sticky;top:0;z-index:20}.top-right{display:flex;align-items:center;gap:15px}.status-dot{display:inline-block;width:7px;height:7px;background:var(--green);border-radius:50%;box-shadow:0 0 12px #43d39e88;margin-right:7px}.user-chip{display:flex;align-items:center;gap:9px;background:#141a24;border:1px solid var(--line);border-radius:30px;padding:6px 12px 6px 6px;color:#dfe5ed}.avatar{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,#ff702e,#8d3817);font-weight:950;color:#1a0c05;flex:none}.shell{display:grid;grid-template-columns:235px minmax(0,1fr);max-width:1600px;margin:auto;min-height:calc(100vh - 70px)}.sidebar{border-right:1px solid #ffffff0e;padding:23px 15px 18px;display:flex;flex-direction:column;gap:6px;min-height:calc(100vh - 70px);position:sticky;top:70px;height:calc(100vh - 70px)}.side-label{font-size:9px;letter-spacing:1.8px;color:#667386;font-weight:900;padding:17px 12px 7px}.nav-btn{width:100%;display:flex;align-items:center;gap:12px;text-align:left;border:1px solid transparent;background:transparent;color:#9aa6b7;padding:12px;border-radius:10px;font-weight:750;transition:.18s}.nav-btn .ico{width:19px;text-align:center;color:#748196;font-size:16px}.nav-btn:hover{background:#ffffff08;color:white}.nav-btn.active{background:linear-gradient(100deg,#ff702e20,#ff702e08);border-color:#ff702e33;color:#fff}.nav-btn.active .ico{color:var(--orange2)}.side-bottom{margin-top:auto}.lang-select{width:100%;background:#111720;border:1px solid var(--line);color:#e6ebf1;padding:10px;border-radius:9px;margin-top:5px}.main{width:100%;max-width:1300px;margin:0 auto;padding:32px clamp(16px,3.5vw,48px) 60px}.page{animation:fade .22s ease}@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}.page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:23px}.page-head h1{font-size:clamp(26px,4vw,38px);line-height:1.12;margin:7px 0 8px;letter-spacing:-1.1px}.page-head p{color:var(--muted);margin:0}.panel{background:linear-gradient(145deg,#151c27,#10151d);border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 35px #0002}.hero{padding:clamp(22px,4vw,36px);display:flex;align-items:center;justify-content:space-between;gap:25px;overflow:hidden;position:relative;background:radial-gradient(circle at 85% 20%,#ff702e30,transparent 34%),linear-gradient(115deg,#21170f,#151b25 64%);border-color:#71402566}.hero:after{content:"CF";position:absolute;right:8%;top:50%;transform:translateY(-50%) rotate(-10deg);font-size:clamp(100px,18vw,220px);font-weight:1000;color:#ffffff06;pointer-events:none}.hero-copy{position:relative;z-index:1;max-width:600px}.hero h2{font-size:clamp(24px,3.4vw,36px);letter-spacing:-1px;line-height:1.15;margin:9px 0}.hero p{color:#b3bdca;max-width:510px;margin:0 0 20px}.btn{border:0;border-radius:10px;padding:12px 17px;font-weight:900;transition:transform .16s,filter .16s}.btn:hover{transform:translateY(-1px);filter:brightness(1.08)}.btn-primary{background:linear-gradient(100deg,var(--orange),var(--orange2));color:#1a0c05;box-shadow:0 8px 24px #ff702e2c}.btn-secondary{background:#202a37;border:1px solid #354253;color:#eaf0f7}.btn-ghost{background:transparent;border:1px solid var(--line);color:#c4ceda}.btn-danger{background:#3a171d;border:1px solid #71303a;color:#ff9aa2}.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin:16px 0 26px}.stat{padding:17px 18px}.stat .label{color:var(--muted);font-size:10px;font-weight:900;letter-spacing:1.2px}.stat .num{font-size:30px;font-weight:950;letter-spacing:-1px;margin-top:4px}.stat .hint{font-size:11px;color:#6f7b8c}.section-title{font-size:16px;font-weight:900;margin:25px 0 13px}.modes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.mode-card{padding:16px 13px;background:#111720;border:1px solid var(--line);border-radius:13px;color:#fff;text-align:left;transition:.18s;min-width:0}.mode-card:hover,.mode-card.selected{border-color:#ff873f;background:linear-gradient(145deg,#3b2115,#171c24);box-shadow:0 0 0 1px #ff702e1c}.mode-card strong{display:block;font-size:22px;color:var(--orange2);letter-spacing:-.6px}.mode-card span{display:block;color:var(--muted);font-size:11px;margin-top:3px}.two-col{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(260px,.7fr);gap:15px}.pad{padding:20px}.list{display:flex;flex-direction:column;gap:9px}.row-item{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #ffffff0b;background:#0d1219;border-radius:12px;min-width:0}.row-item .grow{flex:1;min-width:0}.row-item strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.row-item small{color:var(--muted)}.field{display:flex;flex-direction:column;gap:7px;margin:13px 0}.field label{font-size:10px;color:#aeb8c6;font-weight:900;letter-spacing:1px}.input{width:100%;background:#090e15;border:1px solid #303b49;border-radius:10px;padding:12px 13px;color:#f5f7fb;outline:none;min-width:0}.input:focus{border-color:#ff873f;box-shadow:0 0 0 3px #ff702e18}.input::placeholder{color:#596779}.auth-screen{min-height:calc(100vh - 70px);display:grid;grid-template-columns:minmax(0,1.1fr) minmax(330px,.9fr);max-width:1250px;margin:auto;padding:clamp(20px,5vw,65px);gap:40px;align-items:center}.auth-art{padding:25px 10px}.auth-art h1{font-size:clamp(40px,6vw,68px);line-height:.98;letter-spacing:-3px;margin:18px 0}.auth-art h1 span{color:var(--orange)}.auth-art p{color:#aab5c3;max-width:510px;font-size:16px}.auth-points{display:flex;gap:25px;margin-top:35px;flex-wrap:wrap}.auth-points b{font-size:19px;display:block}.auth-points small{color:var(--muted)}.auth-card{padding:clamp(22px,4vw,34px);box-shadow:var(--shadow)}.auth-card h2{font-size:27px;margin:7px 0}.auth-card>p{color:var(--muted);margin:0 0 20px}.auth-msg,.toast{font-size:12px;min-height:18px;color:var(--orange2);margin-top:10px}.auth-switch{text-align:center;color:var(--muted);font-size:12px;margin-top:17px}.text-btn{background:none;border:0;color:var(--orange2);font-weight:900;padding:3px}.searchbar{display:flex;gap:10px;margin-bottom:15px}.player-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.player-card{padding:15px;display:flex;align-items:center;gap:12px;transition:.18s}.player-card:hover{border-color:#ff702e77;transform:translateY(-2px);box-shadow:0 12px 28px #0004}.player-card .grow{flex:1;min-width:0}.player-card .meta{font-size:11px;color:var(--muted)}.elo-tag{font-size:11px;color:#ffc08f;background:#442616;border:1px solid #754326;padding:4px 8px;border-radius:7px;font-weight:900}.chat-layout{display:grid;grid-template-columns:290px minmax(0,1fr);height:min(660px,calc(100vh - 190px));min-height:430px;overflow:hidden}.chat-list{border-right:1px solid var(--line);padding:14px;overflow:auto}.chat-list h3{margin:5px 5px 13px}.conversation{width:100%;display:flex;gap:10px;align-items:center;text-align:left;background:transparent;border:1px solid transparent;color:#fff;padding:10px;border-radius:10px;margin-bottom:4px}.conversation:hover,.conversation.active{background:#ffffff08;border-color:#ffffff12}.conversation .grow{min-width:0;flex:1}.conversation small{display:block;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.chat-main{display:flex;flex-direction:column;min-width:0}.chat-head{padding:14px 17px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}.chat-messages{padding:18px;overflow:auto;flex:1;display:flex;flex-direction:column;gap:10px}.bubble{max-width:min(75%,520px);padding:10px 13px;border-radius:13px;background:#202a37;color:#edf2f7;overflow-wrap:anywhere}.bubble.mine{align-self:flex-end;background:linear-gradient(120deg,#a94d20,#e66b2c);color:#fff}.bubble small{display:block;font-size:9px;opacity:.65;margin-top:4px}.chat-compose{display:flex;gap:9px;padding:13px;border-top:1px solid var(--line)}.chat-compose input{flex:1;min-width:0}.empty-state{padding:35px 15px;text-align:center;color:var(--muted)}.empty-state .big{font-size:28px;margin-bottom:7px}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:440px}.table th,.table td{text-align:left;padding:13px;border-bottom:1px solid #ffffff0d;font-size:12px}.table th{color:#7f8b9c;font-size:10px;letter-spacing:1px}.rank{color:var(--orange2);font-weight:950}.profile-head{display:flex;align-items:center;gap:18px;padding:23px}.avatar.has-image{overflow:hidden;background:#10151e}.avatar img{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}.career-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin:16px 0}.career-stat{padding:18px}.career-stat .label{font-size:10px;color:var(--muted);font-weight:900;letter-spacing:1.1px}.career-stat .num{font-size:29px;font-weight:950;margin-top:5px}.career-banner{padding:24px;background:radial-gradient(circle at 90% 10%,#ff702e2b,transparent 38%),linear-gradient(120deg,#21170f,#151c27);border-color:#704126}.profile-avatar{width:72px;height:72px;border-radius:20px;font-size:24px}.profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}.profile-stats .panel{padding:14px}.queue-status{display:flex;align-items:center;gap:12px;padding:15px;background:#0d131b;border:1px solid #ffffff12;border-radius:12px;margin-top:15px}.pulse{width:10px;height:10px;background:var(--orange);border-radius:50%;box-shadow:0 0 0 0 #ff702e66;animation:pulse 1.5s infinite}@keyframes pulse{70%{box-shadow:0 0 0 10px #ff702e00}}.match-room{padding:20px;margin-top:15px;border-color:#5b3a27}.team-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.team{padding:14px;background:#0d131b;border:1px solid var(--line);border-radius:12px}.team h4{margin:0 0 10px;color:var(--orange2)}.notice{font-size:11px;color:#8794a5;margin-top:12px;line-height:1.6}.footer-note{font-size:10px;color:#637083;margin-top:20px}.mobile-nav{display:none}.modal-backdrop{position:fixed;inset:0;background:#000a;z-index:50;display:grid;place-items:center;padding:18px}.modal{width:min(450px,100%);padding:22px}.toast-global{position:fixed;right:18px;bottom:18px;z-index:80;background:#17212d;border:1px solid #3b4b5e;padding:12px 16px;border-radius:11px;box-shadow:var(--shadow);max-width:min(420px,calc(100vw - 36px));color:#f3f6fa}.toast-global.error{border-color:#8a3c46;color:#ffadb4}.toast-global.success{border-color:#2d765c;color:#9df0ca}
+/* Premium Counter Flame authentication */
+.auth-screen{position:relative;isolation:isolate}.auth-screen:before{content:"";position:absolute;inset:8% 4%;z-index:-1;background:radial-gradient(ellipse at 18% 35%,#ff702e1c,transparent 45%),radial-gradient(ellipse at 88% 70%,#ff702e12,transparent 40%);filter:blur(12px)}.auth-art .brand{display:inline-flex;align-items:center;gap:8px;padding:9px 13px;border:1px solid #ff702e40;border-radius:10px;background:#ff702e0d}.auth-art h1{max-width:650px;text-transform:uppercase}.auth-art h1 span{ text-shadow:0 0 28px #ff702e55}.auth-art p{line-height:1.8}.auth-points>div{min-width:105px;padding:13px 15px;border:1px solid #ffffff12;border-radius:12px;background:#ffffff06}.auth-card{position:relative;overflow:hidden;border-color:#70412688;background:linear-gradient(155deg,#171e29f5,#0d121af7);backdrop-filter:blur(18px)}.auth-card:before{content:"";position:absolute;left:0;top:0;width:100%;height:3px;background:linear-gradient(90deg,#ff702e,transparent 75%)}.auth-card h2{letter-spacing:-.8px}.auth-card .field{margin:16px 0}.auth-card .input{min-height:48px}.auth-card .btn-primary{min-height:49px;letter-spacing:.5px}.auth-security{display:flex;gap:11px;align-items:flex-start;margin-top:16px;padding:12px;border:1px solid #ff702e35;border-radius:11px;background:#ff702e0c}.auth-security>span{color:var(--orange2);font-size:18px}.auth-security strong,.auth-security small{display:block}.auth-security strong{font-size:9px;letter-spacing:1px;color:#ffc08f}.auth-security small{font-size:10px;line-height:1.55;color:#aab5c3;margin-top:3px}.auth-msg{overflow-wrap:anywhere}
+@media(max-width:900px){.career-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.shell{grid-template-columns:190px 1fr}.sidebar{padding-left:10px;padding-right:10px}.stats{grid-template-columns:repeat(2,1fr)}.two-col{grid-template-columns:1fr}.auth-screen{gap:20px}.chat-layout{grid-template-columns:240px minmax(0,1fr)}}
+@media(max-width:650px){.topbar{height:60px;padding:0 14px}.top-right{gap:7px}.top-right .online-label{display:none}.user-chip{padding:4px 8px 4px 4px;font-size:11px}.user-chip .avatar{width:29px;height:29px}.shell{display:block;min-height:calc(100vh - 60px)}.sidebar{position:static;height:auto;min-height:0;border-right:0;border-bottom:1px solid #ffffff12;padding:8px;display:flex;flex-direction:row;overflow-x:auto;gap:4px}.side-label,.side-bottom{display:none}.nav-btn{width:auto;white-space:nowrap;padding:10px 11px;font-size:11px}.nav-btn .ico{width:auto}.main{padding:22px 13px 40px}.hero{align-items:flex-start;flex-direction:column}.hero:after{right:0}.stats{gap:8px}.stat{padding:13px}.stat .num{font-size:25px}.modes{grid-template-columns:repeat(3,minmax(0,1fr))}.mode-card{padding:13px 10px}.mode-card strong{font-size:19px}.player-grid{grid-template-columns:1fr}.chat-layout{height:calc(100dvh - 185px);min-height:420px;grid-template-columns:112px minmax(0,1fr)}.chat-list{padding:7px}.chat-list h3{font-size:12px}.conversation{padding:8px 5px;gap:6px}.conversation .avatar{width:28px;height:28px;border-radius:8px;font-size:10px}.conversation strong{font-size:10px}.conversation small{display:none}.chat-head{padding:10px}.chat-head .btn{padding:7px;font-size:10px}.chat-messages{padding:10px}.bubble{max-width:90%;font-size:12px}.chat-compose{padding:8px}.chat-compose .btn{padding:9px 11px}.auth-screen{display:block;padding:28px 15px}.auth-art{padding:10px 4px 25px}.auth-art h1{font-size:44px}.auth-art p{font-size:13px}.auth-points{gap:18px;margin-top:18px}.auth-points b{font-size:16px}.auth-points small{font-size:10px}.auth-card{padding:22px}.page-head{align-items:flex-start;flex-direction:column}.team-grid{grid-template-columns:1fr}.profile-head{padding:16px}.profile-avatar{width:58px;height:58px}.profile-stats{gap:7px}.profile-stats .panel{padding:10px}.profile-stats .num{font-size:21px}}
+
+/* Counter Flame AI Match Verification */
+.verification-card{padding:18px;border:1px solid var(--line);background:linear-gradient(145deg,#151c27,#10151d);border-radius:15px}
+.verification-card h3{margin:0 0 5px}.verification-meta{display:flex;gap:8px;flex-wrap:wrap;margin:9px 0 13px}
+.verification-pill{font-size:10px;font-weight:900;letter-spacing:.6px;padding:5px 8px;border-radius:7px;background:#202a37;color:#cbd5e1;border:1px solid #354253}
+.verification-pill.ok{background:#123329;color:#8df0c5;border-color:#28664f}
+.verification-pill.warn{background:#392916;color:#ffd09c;border-color:#74502a}
+.verification-result{margin-top:12px;padding:13px;border-radius:10px;background:#0b1118;border:1px solid #303b49}
+.verification-result strong{display:block;margin-bottom:4px}
+.file-input{display:block;padding:12px;border:1px dashed #526174;border-radius:10px;background:#0b1118;color:#b9c5d4;width:100%;min-height:48px}.upload-preview{display:none;width:100%;max-height:260px;object-fit:contain;background:#070a0f;border:1px solid #344052;border-radius:12px;margin-top:10px}.upload-preview.show{display:block}.upload-help{font-size:11px;color:#91a0b2;margin-top:6px}
+.verification-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+.verification-score{font-size:22px;font-weight:950;color:var(--orange2)}
+
+
+/* ===== COUNTER FLAME: PREMIUM VISUAL PASS ===== */
+:root{
+ --bg:#07090e;--panel:#111722;--panel2:#182231;--line:#293648;
+ --orange:#ff6b2c;--orange2:#ffad62;--cyan:#55d9ff;--violet:#a78bfa;
+ --green:#42e3a4;--red:#ff6478;--shadow:0 24px 80px #0009;
+}
+body{
+ background:
+ radial-gradient(ellipse at 82% 2%,#ff6b2c24,transparent 30%),
+ radial-gradient(ellipse at 5% 42%,#2a74a51b,transparent 32%),
+ radial-gradient(ellipse at 70% 100%,#6936a51a,transparent 35%),var(--bg);
+ background-attachment:fixed;
+}
+.topbar{border-bottom-color:#ff8a4530;box-shadow:0 8px 34px #0005}
+.brand{filter:drop-shadow(0 0 16px #ff702e35)}
+.brand span{ text-shadow:0 0 22px #ff702e99}
+.sidebar{background:linear-gradient(180deg,#0b1019eF,#090d14eF);border-right-color:#ffffff12}
+.nav-btn{position:relative;overflow:hidden;transition:background .2s,border-color .2s,transform .2s}
+.nav-btn:hover{transform:translateX(3px);background:#ffffff0b}
+.nav-btn.active{box-shadow:inset 3px 0 var(--orange),0 8px 25px #ff702e12}
+.panel,.stat,.mode-card,.auth-card,.verification-card{
+ backdrop-filter:blur(14px);
+ box-shadow:0 14px 42px #0004, inset 0 1px #ffffff08;
+}
+.panel{border-color:#344255;background:linear-gradient(145deg,#172130ed,#0e141eed)}
+.hero{border-color:#ff8c4b70;box-shadow:0 18px 55px #ff702e12,inset 0 1px #ffffff12}
+.hero:before{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,#ff9b4b0c 60%,transparent);pointer-events:none}
+.btn-primary{background:linear-gradient(110deg,#ff6529,#ff9b4d 55%,#ffd08a);box-shadow:0 8px 28px #ff702e42}
+.btn-primary:hover{box-shadow:0 12px 34px #ff702e65}
+.btn-secondary:hover,.btn-ghost:hover{border-color:#ff9b5c;color:#fff}
+.input,select.input,textarea.input{border-color:#344255;background:#090f18;transition:border .2s,box-shadow .2s}
+.input:focus,select.input:focus,textarea.input:focus{outline:none;border-color:#ff8c4b;box-shadow:0 0 0 3px #ff702e20}
+.stat{border-color:#344255;position:relative;overflow:hidden}
+.stat:after{content:"";position:absolute;right:-28px;top:-35px;width:100px;height:100px;border-radius:50%;background:#ff702e12;filter:blur(2px)}
+.stat .num{background:linear-gradient(100deg,#fff,#ffb77d);background-clip:text;-webkit-background-clip:text;color:transparent}
+.mode-card{box-shadow:inset 0 1px #ffffff08}
+.mode-card:hover,.mode-card.selected{box-shadow:0 0 0 1px #ff8d4b55,0 12px 30px #ff702e16}
+.verification-card{border:1px solid #344255;border-radius:16px;padding:18px;background:linear-gradient(145deg,#172130,#0c121b);margin:12px 0}
+.verification-result{border:1px solid #ff8c4b35;background:linear-gradient(110deg,#ff702e12,#ffffff04);border-radius:12px;padding:14px;margin-top:13px}
+.verification-pill{border-radius:999px;padding:6px 10px;letter-spacing:.5px}
+.upload-preview{max-width:min(100%,520px);max-height:300px;object-fit:contain;border:1px solid #40516a;border-radius:13px;background:#070b11;box-shadow:0 12px 35px #0007}
+button:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+::selection{background:#ff702e66;color:white}
+@media(max-width:760px){
+ .topbar{padding:0 15px}
+ .shell{grid-template-columns:1fr}
+ .sidebar{position:fixed;z-index:40;left:10px;right:10px;bottom:10px;top:auto;height:auto;min-height:0;display:flex;flex-direction:row;overflow-x:auto;gap:5px;padding:8px;border:1px solid #40516a;background:#0b111deF;border-radius:16px;box-shadow:0 15px 45px #000b}
+ .sidebar .side-label,.sidebar .side-bottom{display:none}
+ .nav-btn{flex:1;min-width:max-content;justify-content:center;padding:10px 12px;font-size:11px}
+ .nav-btn .ico{width:auto}
+ .main{padding-bottom:105px}
+ .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .modes{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .two-col{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+
+/* Code Enter / versus lobby / AI upload */
+.code-panel,.ai-code-panel{background:radial-gradient(circle at 95% 5%,#ff702e22,transparent 34%),linear-gradient(145deg,#182332,#0c121b)}
+.code-entry-row{display:flex;gap:10px;margin-top:15px}
+.code-entry-row .input{flex:1;min-width:0;font-family:ui-monospace,monospace;letter-spacing:.4px}
+.code-match-card{margin-top:15px;border-color:#ff8c4b55}
+.versus-heading{text-align:center;font-weight:1000;letter-spacing:2px;color:var(--orange2);margin-bottom:15px}
+.versus-grid{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:14px;align-items:stretch}
+.versus-team{padding:15px;border:1px solid #ffffff14;border-radius:15px;background:linear-gradient(145deg,#151f2c,#0b1119);min-width:0}
+.versus-mark{text-align:center;font-weight:1000;font-size:28px;letter-spacing:3px;color:#ff9b60;text-shadow:0 0 24px #ff702e66;padding-top:13px}
+.match-player-tile{display:flex;align-items:center;gap:12px;padding:13px;margin-top:9px;min-width:0;border:1px solid #ffffff16;border-radius:12px;background:linear-gradient(110deg,#1a2635,#101720);box-shadow:inset 0 1px #ffffff0b}
+.match-player-tile .grow{min-width:0;flex:1}
+.match-player-tile strong,.match-player-tile small{display:block;overflow-wrap:anywhere}
+.match-player-tile small{font-size:11px;color:#98a7ba;margin-top:3px}
+.ai-code-panel .eyebrow,.code-panel .eyebrow{letter-spacing:1.7px}
+@media(max-width:680px){.code-entry-row{flex-direction:column}.code-entry-row .btn{width:100%}.versus-grid{grid-template-columns:1fr}.versus-mark{padding:0}}
+
+
+/* ===== COUNTER FLAME V5.0.0 · COMPETITIVE UI SYSTEM ===== */
+:root{--v5-ember:#ff6a2b;--v5-amber:#ffb078;--v5-glass:#111923;--v5-border:#293544}
+body{background-image:radial-gradient(ellipse at 72% 0%,#ff6b2b19,transparent 31%),radial-gradient(ellipse at 2% 55%,#203c5429,transparent 34%),linear-gradient(180deg,#080b11,#090d14 58%,#080b11)}
+.topbar{border-bottom-color:#ff8b451c;box-shadow:0 8px 35px #0003}
+.brand{letter-spacing:2px}.brand span{ text-shadow:0 0 18px #ff702e66}
+.panel{border-color:#263342;box-shadow:0 15px 42px #0003}
+.btn-primary{background:linear-gradient(105deg,#ff6829,#ff9a55);box-shadow:0 7px 24px #ff702e26}
+.btn-primary:focus-visible,.btn-secondary:focus-visible,.nav-btn:focus-visible{outline:2px solid #ffc08f;outline-offset:3px}
+.v5-command-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(270px,.65fr);gap:14px;margin:18px 0}
+.v5-feature-card{position:relative;overflow:hidden;min-width:0;border:1px solid #2b3948;border-radius:17px;padding:20px;background:linear-gradient(145deg,#151e29,#0e141d)}
+.v5-focus-card{background:radial-gradient(ellipse at 86% 30%,#ff702e2a,transparent 37%),linear-gradient(115deg,#20170f,#121a25 65%);border-color:#78432677}
+.v5-card-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.v5-kicker{font-size:9px;font-weight:950;letter-spacing:1.8px;color:#ffb078}
+.v5-live{font-size:9px;letter-spacing:1px;color:#a9f0d0;font-weight:900}.v5-live i{display:inline-block;width:6px;height:6px;border-radius:50%;background:#51d8a3;margin:0 6px 1px 0;box-shadow:0 0 10px #51d8a3}
+.v5-focus-content{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:150px}
+.v5-focus-content h2{font-size:clamp(23px,3vw,34px);letter-spacing:-1.2px;margin:18px 0 6px}
+.v5-focus-content p,.v5-training-card>p{color:#aeb9c7;font-size:12px;max-width:400px;margin:0 0 15px}
+.v5-emblem{width:132px;height:132px;flex:none;display:grid;place-items:center;position:relative;border:1px solid #ff9a5544;border-radius:36px;transform:rotate(-10deg);background:linear-gradient(145deg,#ff702e20,#ffffff03);box-shadow:inset 0 0 35px #ff702e0e,0 0 45px #ff702e10}
+.v5-emblem:before,.v5-emblem:after{content:"";position:absolute;inset:13px;border:1px solid #ff9a5540;border-radius:27px}
+.v5-emblem:after{inset:25px;border-color:#ff9a5524;border-radius:19px}
+.v5-emblem span{font-size:40px;font-weight:1000;letter-spacing:-4px;color:#ff9b5c;text-shadow:0 0 25px #ff702e55}
+.v5-emblem i{position:absolute;width:165px;height:1px;background:linear-gradient(90deg,transparent,#ff9b5c88,transparent);transform:rotate(45deg)}
+.v5-feature-foot{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding-top:13px;border-top:1px solid #ffffff12;font-size:9px;letter-spacing:1px;color:#8390a1}
+.v5-feature-foot strong{font-size:10px;color:#e9eef5}.v5-foot-divider{height:15px;width:1px;background:#344252;margin:0 5px}
+.v5-training-card h3{font-size:19px;margin:16px 0 4px}.v5-small-icon{color:#ff9b5c;font-size:20px}
+.v5-task{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid #ffffff0c;color:#d6deea;font-size:11px;cursor:pointer}
+.v5-task input{accent-color:#ff7939;width:15px;height:15px}.v5-task b{color:#ffb078}
+.v5-progress{height:5px;background:#273342;border-radius:8px;overflow:hidden;margin:13px 0 6px}.v5-progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff6829,#ffc08f);border-radius:8px;transition:width .25s}
+.v5-training-card>small{font-size:9px;color:#8290a1}
+.v5-insight-strip{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 19px;border:1px solid #293645;border-radius:14px;background:linear-gradient(100deg,#121a24,#0d131b);margin:0 0 20px}
+.v5-insight-strip>div:first-child strong,.v5-insight-strip>div:first-child small{display:block}.v5-insight-strip>div:first-child strong{font-size:14px;margin:4px 0}.v5-insight-strip>div:first-child small{font-size:10px;color:#8491a2}
+.v5-insight-points{display:flex;gap:16px;flex-wrap:wrap}.v5-insight-points span{font-size:10px;color:#bac5d2}.v5-insight-points b{color:#ff9b5c;margin-right:5px}
+.v5-review-lab{border-color:#67432f;background:radial-gradient(ellipse at 100% 0%,#ff702e12,transparent 34%),linear-gradient(145deg,#141c27,#0e141c)}
+.v5-lab-heading{display:flex;justify-content:space-between;gap:15px;align-items:flex-start}.v5-lab-heading h2{font-size:21px;letter-spacing:-.5px}.v5-lab-mark{font-size:9px;letter-spacing:1.5px;color:#ffb078;border:1px solid #ff8c4c44;padding:7px 9px;border-radius:8px;white-space:nowrap}
+.v5-stats-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:11px;align-items:end;margin-top:15px}.v5-stats-form .field{margin:0}.v5-stats-form .field span{font-size:9px;color:#aab7c6;font-weight:900;letter-spacing:1px}.v5-stats-form .btn{white-space:nowrap}
+.v5-results-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:15px}
+.v5-results-grid>div{padding:13px;border:1px solid #2b3948;background:#0b1119;border-radius:11px;min-width:0}
+.v5-results-grid small,.v5-results-grid strong{display:block}.v5-results-grid small{font-size:9px;letter-spacing:1px;color:#8795a6}.v5-results-grid strong{font-size:20px;margin-top:5px;color:#f4f6fa;overflow-wrap:anywhere}
+.v5-disclaimer{font-size:10px;line-height:1.6;color:#8592a2;margin:12px 0 7px}
+.v5-practice-tips{display:grid;gap:6px;color:#b7c3d0;font-size:11px}.v5-practice-tips span{padding:8px 10px;border-radius:8px;background:#ffffff06}
+@media(max-width:850px){.v5-command-grid{grid-template-columns:1fr}.v5-stats-form{grid-template-columns:repeat(3,minmax(0,1fr))}.v5-stats-form .btn{grid-column:1/-1}}
+@media(max-width:560px){.v5-feature-card{padding:16px}.v5-emblem{width:86px;height:86px;border-radius:25px}.v5-emblem:before{inset:9px;border-radius:18px}.v5-emblem:after{inset:17px;border-radius:13px}.v5-emblem span{font-size:29px}.v5-emblem i{width:110px}.v5-focus-content{min-height:130px}.v5-insight-strip{align-items:flex-start;flex-direction:column}.v5-insight-points{gap:9px 14px}.v5-stats-form{grid-template-columns:1fr 1fr}.v5-stats-form .field:last-of-type{grid-column:1/-1}.v5-results-grid strong{font-size:17px}.v5-lab-heading h2{font-size:18px}}
+
+</style>
+</head>
+<body>
+<header class="topbar"><div class="brand">COUNTER FLAME <span>FACEIT</span></div><div class="top-right"><span class="online-label muted"><i class="status-dot"></i><span data-i18n="community">COMMUNITY ONLINE</span></span><div id="topUser" class="user-chip hidden"><div class="avatar" id="topAvatar">P</div><span id="topName">Player</span></div></div></header>
+<section id="authView" class="auth-screen">
+  <div class="auth-art"><div class="eyebrow">THE COMPETITIVE HUB</div><h1>PLAY SMART.<br><span>CLIMB HIGHER.</span></h1><p>Find balanced matches, meet your next teammates and build your competitive identity in Counter Flame.</p><div class="auth-points"><div><b>1v1 — 5v5</b><small>Competitive formats</small></div><div><b>AI</b><small>Match analysis</small></div><div><b>ELO</b><small>Player rankings</small></div></div></div>
+  <div class="panel auth-card"><div class="eyebrow" id="authEyebrow">CREATE YOUR PLAYER ID</div><h2 id="authTitle">Join the competition</h2><p id="authDesc">Create an account to enter the arena.</p><form id="authForm"><div class="field" id="nameField"><label for="playerName">PLAYER NAME · MUST MATCH IN-GAME</label><input class="input" id="playerName" maxlength="24" placeholder="Enter your exact game nickname" autocomplete="nickname" required><small class="muted">Use the same spelling as your Counter Flame name. Name mismatches invalidate match evidence.</small></div><div class="field"><label for="email">EMAIL ADDRESS</label><input class="input" id="email" type="email" placeholder="you@example.com" autocomplete="email" required></div><div class="field"><label for="password">PASSWORD</label><input class="input" id="password" type="password" minlength="6" placeholder="Enter your password" autocomplete="current-password" required></div><button class="btn btn-primary" id="authSubmit" style="width:100%;margin-top:8px">CREATE ACCOUNT →</button><div class="auth-msg" id="authMsg" role="status" aria-live="polite"></div><button class="text-btn hidden" id="resendConfirm" type="button" style="margin-top:10px">RESEND CONFIRMATION EMAIL</button></form><div class="auth-switch"><span id="switchText">Already have an account?</span> <button class="text-btn" id="switchAuth" type="button">Sign in</button></div><div class="auth-security"><span>✦</span><div><strong>COMPETITIVE IDENTITY CHECK</strong><small>Your platform player name must match the name visible in match screenshots. A mismatch is marked invalid and cannot change ELO.</small></div></div><div class="footer-note">Secure sign-in powered by Supabase. Never share your password or verification codes.</div></div>
+</section>
+<div id="appView" class="shell hidden">
+ <aside class="sidebar">
+  <div class="side-label">COMPETE</div>
+  <button class="nav-btn active" data-page="home"><span class="ico">◈</span><span data-i18n="overview">Overview</span></button>
+  <button class="nav-btn" data-page="queue"><span class="ico">⚔</span><span data-i18n="matchmaking">Matchmaking</span></button>
+  <button class="nav-btn" data-page="codeenter"><span class="ico">⌗</span><span>Code Enter</span></button>
+  <button class="nav-btn" data-page="players"><span class="ico">♙</span><span data-i18n="players">Players</span></button>
+  <button class="nav-btn" data-page="analysis"><span class="ico">✦</span><span data-i18n="aiAnalysis">AI Analysis</span></button>
+   <button class="nav-btn" data-page="leaderboard"><span class="ico">▤</span><span data-i18n="leaderboard">Leaderboard</span></button>
+  <div class="side-label">ACCOUNT</div>
+  <button class="nav-btn" data-page="profile"><span class="ico">◎</span><span data-i18n="myProfile">My profile</span></button>
+  <button class="nav-btn" data-page="career"><span class="ico">♛</span><span data-i18n="career">Career</span></button>
+  <div class="side-bottom"><div class="side-label">PREFERENCES</div><button class="nav-btn" data-page="settings"><span class="ico">⚙</span><span data-i18n="settings">Settings</span></button><select id="language" class="lang-select" aria-label="Language"><option value="en">🌐 English</option><option value="tr">🌐 Türkçe</option></select><button class="nav-btn" id="logout"><span class="ico">↪</span><span data-i18n="signOut">Sign out</span></button></div>
+ </aside>
+ <main class="main">
+  <section id="home" class="page">
+   <div class="page-head"><div><div class="eyebrow">YOUR COMPETITIVE HUB</div><h1><span data-i18n="welcome">Welcome back</span>, <span id="welcomeName">Player</span>.</h1><p data-i18n="welcomeSub">Your next match starts with one click.</p></div></div>
+   <div class="panel hero"><div class="hero-copy"><div class="eyebrow">FIND YOUR NEXT CHALLENGE</div><h2 data-i18n="heroTitle">Ready to prove your skill?</h2><p data-i18n="heroText">Queue up, meet competitive players and climb the leaderboard.</p><button class="btn btn-primary" data-go="queue" data-i18n="findMatch">FIND A MATCH →</button></div></div>
+   <div class="stats"><div class="panel stat"><div class="label">CURRENT ELO</div><div class="num" id="statElo">1000</div><div class="hint">Competitive rating</div></div><div class="panel stat"><div class="label">WINS</div><div class="num" id="statWins">0</div><div class="hint">Verified results</div></div><div class="panel stat"><div class="label">LOSSES</div><div class="num" id="statLosses">0</div><div class="hint">Verified results</div></div><div class="panel stat"><div class="label">WIN RATE</div><div class="num" id="statRate">—</div><div class="hint">Based on recorded matches</div></div></div>
+
+   <section class="v5-command-grid" aria-label="Competitive command center">
+    <article class="v5-feature-card v5-focus-card">
+     <div class="v5-card-top"><span class="v5-kicker">CF PERFORMANCE CENTER</span><span class="v5-live"><i></i> LIVE PROFILE</span></div>
+     <div class="v5-focus-content"><div><h2>Build your next win.</h2><p>Track your form, sharpen your habits and find a balanced lobby.</p><button class="btn btn-primary" data-go="career" type="button">OPEN CAREER <b>↗</b></button></div><div class="v5-emblem" aria-hidden="true"><span>CF</span><i></i></div></div>
+     <div class="v5-feature-foot"><span>COMPETITIVE ID</span><strong id="v5PlayerHandle">PLAYER / CF</strong><span class="v5-foot-divider"></span><span>RATING</span><strong id="v5PlayerRating">1000 ELO</strong></div>
+    </article>
+    <article class="v5-feature-card v5-training-card">
+     <div class="v5-card-top"><span class="v5-kicker">DAILY ROUTINE</span><span class="v5-small-icon">✦</span></div>
+     <h3>Warm-up protocol</h3><p>Three short habits before you queue.</p>
+     <label class="v5-task"><input type="checkbox" data-v5-task="aim"><span><b>5 min</b> · Aim warm-up</span></label>
+     <label class="v5-task"><input type="checkbox" data-v5-task="crosshair"><span><b>3 min</b> · Crosshair placement</span></label>
+     <label class="v5-task"><input type="checkbox" data-v5-task="comms"><span><b>2 min</b> · Team communication plan</span></label>
+     <div class="v5-progress"><span id="v5RoutineProgress"></span></div><small id="v5RoutineLabel">0 / 3 completed · Your routine stays on this device.</small>
+    </article>
+   </section>
+   <section class="v5-insight-strip">
+    <div><span class="v5-kicker">MATCH QUALITY</span><strong>Play fair. Play clear.</strong><small>Verified results only · No invented ratings</small></div>
+    <div class="v5-insight-points"><span><b>01</b> Balanced teams</span><span><b>02</b> Clear match codes</span><span><b>03</b> Evidence-first results</span></div>
+   </section>
+
+   <div class="section-title" data-i18n="chooseFormat">Choose your format</div><div class="modes"><button class="mode-card" data-mode="1v1"><strong>1v1</strong><span>Solo duel · 2 players</span></button><button class="mode-card" data-mode="2v2"><strong>2v2</strong><span>Duo · 4 players</span></button><button class="mode-card" data-mode="3v3"><strong>3v3</strong><span>Squad · 6 players</span></button><button class="mode-card" data-mode="4v4"><strong>4v4</strong><span>Team · 8 players</span></button><button class="mode-card" data-mode="5v5"><strong>5v5</strong><span>Full team · 10 players</span></button></div>
+   <div class="two-col" style="margin-top:18px"><div class="panel pad"><div class="section-title" style="margin-top:0" data-i18n="quickActions">Quick actions</div><div class="list"><button class="row-item" data-go="players"><span class="avatar">♙</span><span class="grow"><strong data-i18n="findPlayers">Find players</strong><small data-i18n="findPlayersSub">Discover competitive players</small></span><span class="orange">→</span></button><button class="row-item" data-go="analysis"><span class="avatar">✦</span><span class="grow"><strong data-i18n="openAnalysis">AI Analysis</strong><small data-i18n="openAnalysisSub">Review verified match results</small></span><span class="orange">→</span></button></div></div><div class="panel pad"><div class="eyebrow">PLATFORM STATUS</div><h3 style="margin:8px 0">Community matchmaking</h3><p class="muted" style="font-size:12px;margin:0">Matches are formed when enough real players join the same mode. The platform does not launch or control the game client.</p></div></div>
+  </section>
+  <section id="queue" class="page hidden"><div class="page-head"><div><div class="eyebrow">COMPETE TOGETHER</div><h1 data-i18n="matchmakingTitle">Matchmaking</h1><p data-i18n="matchmakingSub">Choose a mode. We'll group players waiting for the same format.</p></div></div><div class="modes" id="queueModes"><button class="mode-card" data-mode="1v1"><strong>1v1</strong><span>2 players</span></button><button class="mode-card" data-mode="2v2"><strong>2v2</strong><span>4 players</span></button><button class="mode-card" data-mode="3v3"><strong>3v3</strong><span>6 players</span></button><button class="mode-card" data-mode="4v4"><strong>4v4</strong><span>8 players</span></button><button class="mode-card" data-mode="5v5"><strong>5v5</strong><span>10 players</span></button></div><div class="panel pad" style="margin-top:15px"><div class="eyebrow">QUEUE CONTROL</div><h2 id="queueTitle" style="margin:7px 0 3px">Select a format</h2><p class="muted" id="queueDescription" style="margin:0 0 15px">The system matches players in the same mode.</p><button class="btn btn-primary" id="joinQueue" disabled>FIND PLAYERS →</button> <button class="btn btn-ghost hidden" id="leaveQueue">LEAVE QUEUE</button><div id="queueStatus" class="queue-status hidden"><span class="pulse"></span><div><strong id="queueStatusTitle">Searching for players…</strong><div class="muted" id="queueStatusText" style="font-size:11px">Waiting for other players in this format.</div></div></div><div class="notice">Fair matchmaking: players are grouped by mode and a flexible ELO range. The rating range widens gradually while you wait.</div></div><div id="matchRoom" class="panel match-room hidden"><div class="eyebrow">MATCH FOUND</div><h2 style="margin:5px 0 4px">Your lobby is ready</h2><p class="muted" id="matchMeta" style="margin:0 0 8px;overflow-wrap:anywhere"></p><button class="btn btn-secondary" id="copyMatchCode" type="button" style="margin:0 0 15px">COPY MATCH CODE</button><div class="team-grid"><div class="team"><h4>TEAM 1</h4><div id="team1" class="list"></div></div><div class="team"><h4>TEAM 2</h4><div id="team2" class="list"></div></div></div><div class="notice">This creates a platform lobby only. Players must arrange and launch the game separately. Match results and ELO changes are not automatic yet.</div><button class="btn btn-primary" id="queueAgain" style="margin-top:14px">FIND ANOTHER MATCH →</button></div></section>
+  <section id="codeenter" class="page hidden">
+   <div class="page-head"><div><div class="eyebrow">MATCH ACCESS</div><h1>Code Enter</h1><p>Enter the match code shared by a player to open the lobby.</p></div></div>
+   <div class="panel pad code-panel">
+    <div class="eyebrow">JOIN A MATCH ROOM</div><h2 style="margin:7px 0">Enter match code</h2>
+    <form id="codeEnterForm" class="code-entry-row"><input id="matchCodeInput" class="input" autocomplete="off" spellcheck="false" placeholder="Paste the full match code" aria-label="Match code" required><button class="btn btn-primary" type="submit">OPEN MATCH →</button></form>
+    <div id="codeEnterMessage" class="muted" style="font-size:12px;margin-top:10px">You can copy the full code from the match lobby.</div>
+   </div>
+   <div id="codeMatchResult" class="hidden"></div>
+  </section>
+  <section id="players" class="page hidden"><div class="page-head"><div><div class="eyebrow">COMMUNITY</div><h1 data-i18n="playersTitle">Find players</h1><p data-i18n="playersSub">Discover competitors and start a conversation.</p></div></div><div class="searchbar"><input id="playerSearch" class="input" placeholder="Search player name…" maxlength="24"><button class="btn btn-secondary" id="searchPlayers">SEARCH</button></div><div id="playersList" class="player-grid"><div class="empty-state">Loading players…</div></div></section>
+  <section id="analysis" class="page hidden">
+   <div class="page-head"><div><div class="eyebrow">COUNTER FLAME INTELLIGENCE</div><h1>AI Match Analysis</h1><p>Enter your match code, send the final scoreboard and review the analysis status.</p></div></div>
+   <div class="panel pad ai-code-panel">
+    <div class="eyebrow">STEP 01 · MATCH CODE</div><h2 style="margin:7px 0">Enter code</h2>
+    <div class="code-entry-row"><input id="aiMatchCode" class="input" autocomplete="off" spellcheck="false" placeholder="Paste your full match code" aria-label="AI match code"><button id="aiLoadMatch" class="btn btn-primary" type="button">CONTINUE →</button></div>
+    <div id="aiMatchInfo" class="muted" style="font-size:12px;margin-top:10px">Your match lobby will be loaded after the code is checked.</div>
+    <div id="aiMatchPlayers" class="hidden" style="margin-top:12px"></div>
+   </div>
+   <div id="aiUploadPanel" class="panel pad hidden" style="margin-top:14px">
+    <div class="eyebrow">STEP 02 · SCOREBOARD EVIDENCE</div><h2 style="margin:7px 0">Send photo</h2>
+    <p class="muted" style="font-size:12px">Upload the original end-of-match scoreboard. Keep all player names and statistics visible.</p>
+    <label class="field"><span>FINAL SCOREBOARD IMAGE</span><input id="aiScoreboardFile" class="input" type="file" accept="image/png,image/jpeg,image/webp"></label>
+    <img id="aiScoreboardPreview" class="upload-preview hidden" alt="Scoreboard preview">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:15px"><button id="aiSubmitEvidence" class="btn btn-primary" type="button" disabled>SEND FOR AI ANALYSIS →</button><button id="aiClearEvidence" class="btn btn-ghost" type="button">CLEAR</button></div>
+    <div id="aiSubmitStatus" class="notice" style="margin-top:14px">The screenshot will be checked against the match players. Unverified results must not change ELO.</div>
+   </div>
+
+   <section class="panel pad v5-review-lab" style="margin-top:14px">
+    <div class="v5-lab-heading"><div><div class="eyebrow">CF REVIEW LAB · PRACTICE TOOL</div><h2 style="margin:6px 0">Personal performance breakdown</h2><p class="muted" style="margin:0">Enter stats from your scoreboard to get transparent calculations and practice suggestions.</p></div><span class="v5-lab-mark">LAB / 01</span></div>
+    <form id="v5StatsForm" class="v5-stats-form">
+     <label class="field"><span>KILLS</span><input class="input" id="v5Kills" type="number" min="0" max="999" value="18" required></label>
+     <label class="field"><span>DEATHS</span><input class="input" id="v5Deaths" type="number" min="0" max="999" value="12" required></label>
+     <label class="field"><span>HEADSHOTS</span><input class="input" id="v5Headshots" type="number" min="0" max="999" value="7" required></label>
+     <button class="btn btn-primary" type="submit">ANALYZE MY STATS ↗</button>
+    </form>
+    <div class="v5-results-grid" id="v5StatsResult" aria-live="polite">
+     <div><small>K / D RATIO</small><strong id="v5KD">1.50</strong></div><div><small>HEADSHOT SHARE</small><strong id="v5HS">38.9%</strong></div><div><small>REVIEW NOTE</small><strong id="v5ReviewNote">Balanced start</strong></div>
+    </div>
+    <p class="v5-disclaimer">Practice assistant only: these calculations use the numbers you enter. This is not screenshot OCR, an AI verdict, or an official match result. It never changes ELO.</p>
+    <div id="v5PracticeTips" class="v5-practice-tips"><span>• Keep crosshair height consistent before taking a duel.</span><span>• Review deaths by position, not just total score.</span></div>
+   </section>
+
+   <div class="panel pad" style="margin-top:14px">
+    <div class="eyebrow">VERIFICATION STATUS</div><h2 style="margin:7px 0">Secure result review</h2><div class="notice">The screenshot preview and match lookup are available. Automatic OCR, in-game nickname comparison, result verification and ELO updates require the server-side AI verification service. Until it is connected, this page will not claim a result or change anyone’s ELO.</div>
+   </div>
+  </section>
+  <section id="leaderboard" class="page hidden"><div class="page-head"><div><div class="eyebrow">THE BEST OF THE BEST</div><h1 data-i18n="leaderboardTitle">Leaderboard</h1><p data-i18n="leaderboardSub">Players ranked by their current ELO.</p></div></div><div class="panel pad table-wrap"><table class="table"><thead><tr><th>RANK</th><th>PLAYER</th><th>ELO</th><th>WINS</th><th>LOSSES</th></tr></thead><tbody id="leaderRows"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody></table></div></section>
+  <section id="profile" class="page hidden"><div class="page-head"><div><div class="eyebrow">PLAYER IDENTITY</div><h1 data-i18n="myProfileTitle">My profile</h1><p data-i18n="profileSub">Your public competitive identity.</p></div></div><div class="panel profile-head"><div class="avatar profile-avatar" id="profileAvatar">P</div><div style="min-width:0;flex:1"><h2 id="profileDisplayName" style="margin:0">Player</h2><div class="muted" id="profileEmail"></div><div class="elo-tag" id="profileEloTag" style="display:inline-block;margin-top:8px">1000 ELO</div><div style="margin-top:12px"><button class="btn btn-secondary" id="chooseAvatar" type="button">CHOOSE PROFILE PHOTO</button><input id="avatarFile" type="file" accept="image/png,image/jpeg,image/webp" style="display:block;margin-top:9px;max-width:100%"><span class="muted" id="avatarMsg" style="font-size:11px;margin-left:8px">PNG/JPG/WebP · max 3 MB</span></div></div></div><div class="profile-stats"><div class="panel"><small class="muted">ELO</small><div class="num" id="profileElo">1000</div></div><div class="panel"><small class="muted">WINS</small><div class="num" id="profileWins">0</div></div><div class="panel"><small class="muted">LOSSES</small><div class="num" id="profileLosses">0</div></div></div><div class="panel pad" style="margin-top:15px"><h3 style="margin:0 0 12px">Edit public profile</h3><form id="profileForm"><div class="field"><label for="editName">PLAYER NAME</label><input id="editName" class="input" maxlength="24" required></div><div class="field"><label for="editBio">BIO</label><textarea id="editBio" class="input" maxlength="180" rows="3" placeholder="A short intro about your play style…"></textarea></div><button class="btn btn-primary" type="submit">SAVE PROFILE</button><span class="toast" id="profileMsg"></span></form></div></section>
+  <section id="career" class="page hidden"><div class="page-head"><div><div class="eyebrow">PLAYER PERFORMANCE</div><h1>Career</h1><p>Your personal competitive record, built from verified match data.</p></div><button class="btn btn-secondary career-edit-link" type="button" onclick="document.querySelector('[data-page=profile]').click()">EDIT MY PROFILE</button></div><div class="panel career-banner"><div class="eyebrow">PLAYER CARD</div><div style="display:flex;align-items:center;gap:14px;margin-top:10px"><div class="avatar profile-avatar" id="careerAvatar">P</div><div><h2 id="careerName" style="margin:0">Player</h2><div class="muted" id="careerRank">Unranked · 1000 ELO</div></div></div></div><div class="career-grid"><div class="panel career-stat"><div class="label">ELO RATING</div><div class="num" id="careerElo">1000</div></div><div class="panel career-stat"><div class="label">KILLS</div><div class="num" id="careerKills">0</div></div><div class="panel career-stat"><div class="label">DEATHS</div><div class="num" id="careerDeaths">0</div></div><div class="panel career-stat"><div class="label">K/D RATIO</div><div class="num" id="careerKD">0.00</div></div><div class="panel career-stat"><div class="label">WINS</div><div class="num" id="careerWins">0</div></div><div class="panel career-stat"><div class="label">LOSSES</div><div class="num" id="careerLosses">0</div></div><div class="panel career-stat"><div class="label">WIN RATE</div><div class="num" id="careerWinRate">—</div></div><div class="panel career-stat"><div class="label">MATCHES PLAYED</div><div class="num" id="careerMatches">0</div></div><div class="panel career-stat"><div class="label">HEADSHOTS</div><div class="num" id="careerHeadshots">0</div></div></div><div class="notice">Kills, deaths and headshots are displayed from verified player-stat records. They remain 0 until the match verification backend actually supplies those statistics.</div></section>
+  <section id="settings" class="page hidden"><div class="page-head"><div><div class="eyebrow">PREFERENCES</div><h1 data-i18n="settingsTitle">Settings</h1><p data-i18n="settingsSub">Manage your account and interface.</p></div></div><div class="panel pad"><h3 style="margin-top:0">Language</h3><p class="muted">Choose your preferred interface language.</p><select id="language2" class="lang-select" style="max-width:240px"><option value="en">English</option><option value="tr">Türkçe</option></select></div><div class="panel pad" style="margin-top:14px"><h3 style="margin-top:0">Account</h3><p class="muted" id="settingsEmail"></p><button class="btn btn-ghost" id="settingsLogout">SIGN OUT</button></div><div class="panel pad" style="margin-top:14px"><h3 style="margin-top:0">Privacy & safety</h3><p class="muted">Match evidence is private to authorized match participants. Only verified results can affect competitive ratings.</p></div></section>
+ </main>
+</div>
+<div id="toast" class="toast-global hidden" role="status"></div>
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const state = { sb:null, user:null, signup:true, mode:null, profile:null, activeConversation:null, activeOther:null, activeChannel:null, conversations:[], language:'en', queueChannel:null, queuePoll:null, toastTimer:null, reportTarget:null, analysisChannel:null, careerUserId:null, currentMatchId:null, aiSelectedMatchId:null, aiImageData:null };
+const dict = {
+ en:{community:'COMMUNITY ONLINE',overview:'Overview',matchmaking:'Matchmaking',players:'Players',aiAnalysis:'AI Analysis',leaderboard:'Leaderboard',myProfile:'My profile',career:'Career',settings:'Settings',signOut:'Sign out',welcome:'Welcome back',welcomeSub:'Your next match starts with one click.',heroTitle:'Ready to prove your skill?',heroText:'Queue up, meet competitive players and climb the leaderboard.',findMatch:'FIND A MATCH →',chooseFormat:'Choose your format',quickActions:'Quick actions',findPlayers:'Find players',findPlayersSub:'Discover competitive players',openAnalysis:'AI Analysis',openAnalysisSub:'Review verified match results',matchmakingTitle:'Matchmaking',matchmakingSub:'Choose a mode. We group players waiting for the same format.',playersTitle:'Find players',playersSub:'Discover competitors and start a conversation.',leaderboardTitle:'Leaderboard',leaderboardSub:'Players ranked by their current ELO.',myProfileTitle:'My profile',profileSub:'Your public competitive identity.',settingsTitle:'Settings',settingsSub:'Manage your account and interface.'},
+ tr:{community:'TOPLULUK ÇEVRİMİÇİ',overview:'Genel Bakış',matchmaking:'Eşleştirme',players:'Oyuncular',aiAnalysis:'AI Analizi',leaderboard:'Sıralama',myProfile:'Profilim',career:'Kariyer',settings:'Ayarlar',signOut:'Çıkış yap',welcome:'Tekrar hoş geldin',welcomeSub:'Bir sonraki maçın tek tık uzağında.',heroTitle:'Yeteneğini kanıtlamaya hazır mısın?',heroText:'Sıraya katıl, rekabetçi oyuncularla tanış ve sıralamada yüksel.',findMatch:'MAÇ BUL →',chooseFormat:'Oyun modunu seç',quickActions:'Hızlı işlemler',findPlayers:'Oyuncu bul',findPlayersSub:'Rekabetçi oyuncuları keşfet',openAnalysis:'AI Analizi',openAnalysisSub:'Doğrulanmış maç sonuçlarını incele',matchmakingTitle:'Eşleştirme',matchmakingSub:'Mod seç. Aynı modu bekleyen oyuncuları eşleştiririz.',playersTitle:'Oyuncu bul',playersSub:'Rakipleri keşfet ve sohbete başla.',leaderboardTitle:'Sıralama',leaderboardSub:'Oyuncular mevcut ELO puanlarına göre sıralanır.',myProfileTitle:'Profilim',profileSub:'Herkese açık rekabetçi profilin.',settingsTitle:'Ayarlar',settingsSub:'Hesabını ve arayüzü yönet.'}
+};
+function tr(key){return (dict[state.language]&&dict[state.language][key])||dict.en[key]||key}
+function toast(message,type='success'){const box=$('toast');box.textContent=message;box.className='toast-global '+type;clearTimeout(state.toastTimer);state.toastTimer=setTimeout(()=>box.classList.add('hidden'),4200)}
+function safeText(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function initials(name){const parts=String(name||'P').trim().split(/\s+/);return (parts.length>1?parts[0][0]+parts[1][0]:parts[0].slice(0,2)).toUpperCase()}
+function paintAvatar(el,name,url){if(!el)return;el.replaceChildren();el.classList.toggle('has-image',!!url);if(url){const img=document.createElement('img');img.src=url;img.alt=(name||'Player')+' avatar';img.loading='lazy';img.onerror=()=>{el.classList.remove('has-image');el.textContent=initials(name)};el.append(img)}else{el.textContent=initials(name)}}
+function setLanguage(value){state.language=value==='tr'?'tr':'en';document.documentElement.lang=state.language;$('language').value=state.language;$('language2').value=state.language;document.querySelectorAll('[data-i18n]').forEach(el=>{const key=el.dataset.i18n;el.textContent=tr(key)});$('queueTitle').textContent=state.mode?`${state.mode} matchmaking`:'Select a format';}
+function showPage(page){document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));$(page)?.classList.remove('hidden');document.querySelectorAll('.nav-btn[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===page));if(page==='players')loadPlayers();if(page==='leaderboard')loadLeaderboard();if(page==='profile')renderProfile();if(page==='career'){if(!state.careerUserId)state.careerUserId=state.user?.id;loadCareer(state.careerUserId)}}
+function setAuthMode(){state.signup=!state.signup;$('authTitle').textContent=state.signup?'Join the competition':'Welcome back';$('authDesc').textContent=state.signup?'Create an account to enter the arena.':'Sign in to continue to your player hub.';$('authEyebrow').textContent=state.signup?'CREATE YOUR PLAYER ID':'PLAYER LOGIN';$('nameField').classList.toggle('hidden',!state.signup);$('playerName').required=state.signup;$('authSubmit').textContent=state.signup?'CREATE ACCOUNT →':'SIGN IN →';$('switchText').textContent=state.signup?'Already have an account?':"Don't have an account?";$('switchAuth').textContent=state.signup?'Sign in':'Create account';$('authMsg').textContent=''}
+$('switchAuth').addEventListener('click',setAuthMode);
+function authRedirectUrl(){return window.location.origin+window.location.pathname}
+function showResend(show){$('resendConfirm').classList.toggle('hidden',!show)}
+$('resendConfirm').addEventListener('click',async()=>{const email=$('email').value.trim();if(!email){$('authMsg').textContent='Enter your email address first.';return}const btn=$('resendConfirm');btn.disabled=true;$('authMsg').textContent='Sending a new confirmation email…';try{const {error}=await state.sb.auth.resend({type:'signup',email,options:{emailRedirectTo:authRedirectUrl()}});if(error)throw error;$('authMsg').textContent='Confirmation email requested. Check Inbox, Spam and Promotions.'}catch(err){$('authMsg').textContent='Could not resend: '+(err.message||'Please try again.')}finally{btn.disabled=false}});
+$('authForm').addEventListener('submit',async e=>{e.preventDefault();if(!state.sb){$('authMsg').textContent='Setup error: config.js or Supabase is missing.';return}const email=$('email').value.trim(),password=$('password').value,name=$('playerName').value.trim();$('authSubmit').disabled=true;showResend(false);$('authMsg').textContent='Please wait…';try{let result;if(state.signup){result=await state.sb.auth.signUp({email,password,options:{emailRedirectTo:authRedirectUrl(),data:{display_name:name}}})}else{result=await state.sb.auth.signInWithPassword({email,password})}if(result.error)throw result.error;if(state.signup&&!result.data.session){$('authMsg').textContent='Account created. Confirmation link requested. Check Inbox, Spam and Promotions. If it does not arrive, use Resend confirmation email below.';showResend(true)}else if(result.data.user){state.user=result.data.user;await enterApp()}}catch(err){const message=err.message||'Authentication failed.';$('authMsg').textContent=message;if(state.signup&&/already registered|already been registered|user already/i.test(message)){showResend(true);$('authMsg').textContent='This email may already have an account. Try signing in, or resend the confirmation email.'}}finally{$('authSubmit').disabled=false}});
+async function enterApp(){if(!state.user||!state.sb)return;$('authView').classList.add('hidden');$('appView').classList.remove('hidden');$('topUser').classList.remove('hidden');$('topName').textContent=state.user.user_metadata?.display_name||state.user.email?.split('@')[0]||'Player';$('topAvatar').textContent=initials($('topName').textContent);$('profileEmail').textContent=state.user.email||'';$('settingsEmail').textContent='Signed in as '+(state.user.email||'');await ensureProfile();renderProfile();showPage('home');startMatchSubscription();}
+async function ensureProfile(){const name=state.user.user_metadata?.display_name||state.user.email?.split('@')[0]||'Player';let {data,error}=await state.sb.from('profiles').select('*').eq('id',state.user.id).maybeSingle();if(error)throw error;if(!data){const ins=await state.sb.from('profiles').insert({id:state.user.id,username:name}).select('*').single();if(ins.error)throw ins.error;data=ins.data}state.profile=data;}
+function renderProfile(){if(!state.profile)return;const p=state.profile,name=p.username||'Player',elo=p.elo??1000,wins=p.wins??0,losses=p.losses??0,total=wins+losses;$('welcomeName').textContent=name;if($('v5PlayerHandle'))$('v5PlayerHandle').textContent=name.toUpperCase().slice(0,18)+' / CF';if($('v5PlayerRating'))$('v5PlayerRating').textContent=elo+' ELO';$('profileDisplayName').textContent=name;$('topName').textContent=name;paintAvatar($('profileAvatar'),name,p.avatar_url);paintAvatar($('topAvatar'),name,p.avatar_url);$('statElo').textContent=elo;$('statWins').textContent=wins;$('statLosses').textContent=losses;$('statRate').textContent=total?Math.round(wins/total*100)+'%':'—';$('profileElo').textContent=elo;$('profileWins').textContent=wins;$('profileLosses').textContent=losses;$('profileEloTag').textContent=elo+' ELO';$('editName').value=name;$('editBio').value=p.bio||'';renderCareer();}
+async function loadCareer(userId){if(!userId||!state.sb)return;const box=$('career');const {data,error}=await state.sb.from('profiles').select('*').eq('id',userId).maybeSingle();if(error){toast('Career profile: '+error.message,'error');return}if(!data){toast('Player profile not found.','error');return}renderCareer(data,userId===state.user.id)}
+function renderCareer(p=state.profile,isOwn=(p?.id===state.user?.id)){if(!p)return;const name=p.username||'Player',elo=Number(p.elo??1000),wins=Number(p.wins??0),losses=Number(p.losses??0),kills=Number(p.kills??0),deaths=Number(p.deaths??0),headshots=Number(p.headshots??0),matches=Number(p.matches_played??(wins+losses)),rate=matches?Math.round(wins/matches*100)+'%':'—',kd=deaths?(kills/deaths).toFixed(2):(kills?kills.toFixed(2):'0.00');$('careerName').textContent=name;$('careerRank').textContent=(elo>=2000?'Elite':elo>=1600?'Advanced':elo>=1200?'Rising':'Unranked')+' · '+elo+' ELO';paintAvatar($('careerAvatar'),name,p.avatar_url);$('careerElo').textContent=elo;$('careerKills').textContent=kills;$('careerDeaths').textContent=deaths;$('careerKD').textContent=kd;$('careerWins').textContent=wins;$('careerLosses').textContent=losses;$('careerWinRate').textContent=rate;$('careerMatches').textContent=matches;$('careerHeadshots').textContent=headshots;const head=$('career').querySelector('.page-head h1');if(head)head.textContent=isOwn?'Career':name+' · Career';const desc=$('career').querySelector('.page-head p');if(desc)desc.textContent=isOwn?'Your personal competitive record, built from verified match data.':'Player competitive record';const edit=$('career').querySelector('.career-edit-link');if(edit)edit.classList.toggle('hidden',!isOwn);}
+$('profileForm').addEventListener('submit',async e=>{e.preventDefault();const username=$('editName').value.trim(),bio=$('editBio').value.trim();if(username.length<2){$('profileMsg').textContent='Player name must be at least 2 characters.';return}const {data,error}=await state.sb.from('profiles').update({username,bio,updated_at:new Date().toISOString()}).eq('id',state.user.id).select('*').single();if(error){$('profileMsg').textContent=error.message;return}state.profile=data;renderProfile();$('profileMsg').textContent='Profile saved.';});
+$('chooseAvatar').addEventListener('click',()=>$('avatarFile').click());
+$('avatarFile').addEventListener('change',async e=>{const file=e.target.files?.[0];if(!file)return;const msg=$('avatarMsg');if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>3*1024*1024){msg.textContent='Choose PNG, JPG or WebP up to 3 MB.';e.target.value='';return}msg.textContent='Uploading…';try{const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg',path=state.user.id+'/'+Date.now()+'.'+ext;const {error:upErr}=await state.sb.storage.from('cf-avatars').upload(path,file,{upsert:true,contentType:file.type,cacheControl:'3600'});if(upErr)throw upErr;const {data}=state.sb.storage.from('cf-avatars').getPublicUrl(path);const {data:updated,error}=await state.sb.from('profiles').update({avatar_url:data.publicUrl,updated_at:new Date().toISOString()}).eq('id',state.user.id).select('*').single();if(error)throw error;state.profile=updated;renderProfile();msg.textContent='Photo updated.'}catch(err){msg.textContent=err.message||'Upload failed. Check cf-avatars storage setup.'}finally{e.target.value=''}});
+$('logout').addEventListener('click',()=>state.sb?.auth.signOut());$('settingsLogout').addEventListener('click',()=>state.sb?.auth.signOut());
+$('language').addEventListener('change',e=>setLanguage(e.target.value));$('language2').addEventListener('change',e=>setLanguage(e.target.value));
+document.querySelectorAll('.nav-btn[data-page]').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.page==='career')state.careerUserId=state.user?.id;showPage(b.dataset.page)}));document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.go)));
+document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>selectMode(b.dataset.mode)));
+function selectMode(mode){state.mode=mode;document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('selected',b.dataset.mode===mode));$('queueTitle').textContent=mode+' matchmaking';$('queueDescription').textContent=`Find a ${mode} lobby. A match needs ${Number(mode[0])*2} players.`;$('joinQueue').disabled=false;showPage('queue');}
+$('joinQueue').addEventListener('click',joinQueue);$('leaveQueue').addEventListener('click',leaveQueue);
+async function joinQueue(){if(!state.mode||!state.user)return;$('joinQueue').disabled=true;$('queueStatus').classList.remove('hidden');$('queueStatusTitle').textContent='Joining queue…';$('queueStatusText').textContent='Connecting to matchmaking service.';try{const {data,error}=await state.sb.rpc('cf_join_matchmaking',{p_mode:state.mode});if(error)throw error;if(data.status==='matched'){stopQueuePolling();renderMatch(data.match_id);$('queueStatusTitle').textContent='Match found!';$('queueStatusText').textContent='Your lobby is ready.';$('leaveQueue').classList.add('hidden')}else{$('queueStatusTitle').textContent='Searching for players…';$('queueStatusText').textContent=`${data.players_found} / ${data.players_needed} players found · ±${data.elo_range} ELO`;$('leaveQueue').classList.remove('hidden');$('joinQueue').disabled=false;startQueuePolling()}}catch(err){$('queueStatusTitle').textContent='Could not join queue';$('queueStatusText').textContent=err.message||'Check that the matchmaking SQL setup has been run.';$('joinQueue').disabled=false;toast(err.message||'Matchmaking error','error')}}
+function stopQueuePolling(){if(state.queuePoll){clearInterval(state.queuePoll);state.queuePoll=null}}
+function startQueuePolling(){stopQueuePolling();state.queuePoll=setInterval(async()=>{if(!state.user||!state.mode||$('queueStatus').classList.contains('hidden')){stopQueuePolling();return}const {data,error}=await state.sb.rpc('cf_join_matchmaking',{p_mode:state.mode});if(error){$('queueStatusText').textContent=error.message;return}if(data.status==='matched'){stopQueuePolling();$('queueStatusTitle').textContent='Match found!';$('queueStatusText').textContent='Your lobby is ready.';$('leaveQueue').classList.add('hidden');renderMatch(data.match_id)}else{$('queueStatusText').textContent=`${data.players_found} / ${data.players_needed} players found · ±${data.elo_range} ELO`}},12000)}
+async function leaveQueue(){stopQueuePolling();const {data,error}=await state.sb.rpc('cf_leave_matchmaking');if(error){toast(error.message,'error');return}$('queueStatus').classList.add('hidden');$('leaveQueue').classList.add('hidden');$('joinQueue').disabled=false;toast('You left the matchmaking queue.')}
+$('queueAgain').addEventListener('click',async()=>{const {error}=await state.sb.rpc('cf_leave_matchmaking');if(error){toast(error.message,'error');return}$('matchRoom').classList.add('hidden');$('queueStatus').classList.add('hidden');$('leaveQueue').classList.add('hidden');$('joinQueue').disabled=false;toast('Ready for another match. Choose a mode and join the queue.');});
+function startMatchSubscription(){if(state.queueChannel)state.sb.removeChannel(state.queueChannel);state.queueChannel=state.sb.channel('cf-match-'+state.user.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'cf_match_players',filter:'user_id=eq.'+state.user.id},payload=>{const matchId=payload.new?.match_id;if(matchId){stopQueuePolling();$('queueStatus').classList.remove('hidden');$('queueStatusTitle').textContent='Match found!';$('queueStatusText').textContent='Your lobby is ready.';$('leaveQueue').classList.add('hidden');renderMatch(matchId)}}).subscribe();}
+$('copyMatchCode')?.addEventListener('click',async()=>{if(!state.currentMatchId)return;try{await navigator.clipboard.writeText(state.currentMatchId);toast('Match code copied.')}catch(_){toast('Select and copy the match code from the lobby details.','error')}});
+async function renderMatch(matchId){stopQueuePolling();try{const m=await state.sb.from('cf_matches').select('*').eq('id',matchId).single();if(m.error)throw m.error;const p=await state.sb.from('cf_match_players').select('user_id,team_no').eq('match_id',matchId).order('team_no');if(p.error)throw p.error;const ids=p.data.map(x=>x.user_id);const prof=ids.length?await state.sb.from('profiles').select('id,username,elo,avatar_url').in('id',ids):{data:[],error:null};if(prof.error)throw prof.error;const profileMap=new Map((prof.data||[]).map(x=>[x.id,x]));$('matchRoom').classList.remove('hidden');$('matchMeta').textContent=`${m.data.mode} · MATCH CODE: ${String(matchId).toUpperCase()} · ${new Date(m.data.created_at).toLocaleString()}`;state.currentMatchId=matchId;for(const [team,teamNo] of [['team1',1],['team2',2]]){const box=$(team);box.replaceChildren();const members=p.data.filter(x=>x.team_no===teamNo);members.forEach(x=>{const profile=profileMap.get(x.user_id)||{};const item=document.createElement('div');item.className='match-player-tile';const av=document.createElement('div');av.className='avatar';paintAvatar(av,profile.username,profile.avatar_url);const label=document.createElement('div');label.className='grow';const strong=document.createElement('strong');strong.textContent=profile.username||'Player';const small=document.createElement('small');small.textContent=(profile.elo??1000)+' ELO';label.append(strong,small);item.append(av,label);box.append(item)})}showPage('queue')}catch(err){toast(err.message||'Could not load match room','error')}}
+
+// Match code is the full UUID shown in the lobby; this avoids collisions from short codes.
+async function openMatchFromCode(raw, target){
+ const code=String(raw||'').trim().replace(/[{}]/g,'');
+ const msg=$(target==='ai'?'aiMatchInfo':'codeEnterMessage');
+ if(target==='ai'){$('aiUploadPanel').classList.add('hidden');$('aiMatchPlayers').classList.add('hidden');$('aiMatchPlayers').replaceChildren();state.aiSelectedMatchId=null;state.aiImageData=null;$('aiScoreboardFile').value='';$('aiScoreboardPreview').removeAttribute('src');$('aiScoreboardPreview').classList.add('hidden');$('aiSubmitEvidence').disabled=true;}
+ if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(code)){
+  msg.textContent='Invalid code. Paste the complete match code shown in the lobby.';return null;
+ }
+ msg.textContent='Loading match profiles…';
+ try{
+  const match=await state.sb.from('cf_matches').select('id,mode,created_at').eq('id',code).maybeSingle();
+  if(match.error)throw match.error;
+  if(!match.data){msg.textContent='Match not found, or your account does not have access to it.';return null}
+  const players=await state.sb.from('cf_match_players').select('user_id,team_no').eq('match_id',code).order('team_no');
+  if(players.error)throw players.error;
+  if(!players.data?.length){msg.textContent='No player profiles were found for this match.';return null}
+  const ids=players.data.map(p=>p.user_id);
+  const profiles=await state.sb.from('profiles').select('id,username,elo,avatar_url').in('id',ids);
+  if(profiles.error)throw profiles.error;
+  const byId=new Map((profiles.data||[]).map(p=>[p.id,p]));
+  const host=target==='ai'?$('aiMatchInfo'):$('codeMatchResult');
+  if(target==='code'){
+   host.replaceChildren();
+   const shell=document.createElement('div');shell.className='panel pad code-match-card';
+   const heading=document.createElement('div');heading.className='versus-heading';heading.textContent='MATCH FOUND';
+   const versus=document.createElement('div');versus.className='versus-grid';
+   for(const teamNo of [1,2]){
+    const team=document.createElement('div');team.className='versus-team';
+    const teamTitle=document.createElement('div');teamTitle.className='eyebrow';teamTitle.textContent='TEAM '+teamNo;team.append(teamTitle);
+    players.data.filter(p=>p.team_no===teamNo).forEach(p=>{
+     const profile=byId.get(p.user_id)||{};
+     const tile=document.createElement('div');tile.className='match-player-tile';
+     const avatar=document.createElement('div');avatar.className='avatar';paintAvatar(avatar,profile.username,profile.avatar_url);
+     const name=document.createElement('strong');name.textContent=profile.username||'Player';
+     const elo=document.createElement('small');elo.textContent=(profile.elo??1000)+' ELO';
+     const text=document.createElement('div');text.className='grow';text.append(name,elo);tile.append(avatar,text);team.append(tile);
+    });
+    versus.append(team);
+   }
+   const vs=document.createElement('div');vs.className='versus-mark';vs.textContent='VS';
+   if(versus.children.length===2)versus.insertBefore(vs,versus.children[1]);
+   shell.append(heading,versus);host.append(shell);
+   host.classList.remove('hidden');
+   msg.textContent='Match loaded. Player names are shown from their Counter Flame profiles.';
+  }else{
+   state.aiSelectedMatchId=code;
+   const playerHost=$('aiMatchPlayers');playerHost.replaceChildren();
+   const card=document.createElement('div');card.className='panel pad code-match-card';
+   const heading=document.createElement('div');heading.className='versus-heading';heading.textContent=match.data.mode+' · MATCH FOUND';
+   const grid=document.createElement('div');grid.className='versus-grid';
+   const teams=[];
+   for(const teamNo of [1,2]){
+    const team=document.createElement('div');team.className='versus-team';
+    const teamTitle=document.createElement('div');teamTitle.className='eyebrow';teamTitle.textContent='TEAM '+teamNo;team.append(teamTitle);
+    players.data.filter(p=>p.team_no===teamNo).forEach(p=>{const profile=byId.get(p.user_id)||{};const tile=document.createElement('div');tile.className='match-player-tile';const avatar=document.createElement('div');avatar.className='avatar';paintAvatar(avatar,profile.username,profile.avatar_url);const details=document.createElement('div');details.className='grow';const name=document.createElement('strong');name.textContent=profile.username||'Player';const elo=document.createElement('small');elo.textContent=(profile.elo??1000)+' ELO';details.append(name,elo);tile.append(avatar,details);team.append(tile)});
+    teams.push(team);
+   }
+   const vs=document.createElement('div');vs.className='versus-mark';vs.textContent='VS';grid.append(teams[0],vs,teams[1]);card.append(heading,grid);playerHost.append(card);playerHost.classList.remove('hidden');
+   $('aiUploadPanel').classList.remove('hidden');
+   $('aiSubmitStatus').textContent='Match found: '+match.data.mode+' · '+players.data.length+' players. Choose the original scoreboard image. AI verification is not connected yet.';
+   msg.textContent='Match found. '+players.data.length+' player profiles loaded.';
+  }
+  return code;
+ }catch(err){msg.textContent='Could not load match: '+(err.message||'Unknown error');return null}
+}
+$('codeEnterForm')?.addEventListener('submit',async e=>{
+ e.preventDefault();
+ const code=await openMatchFromCode($('matchCodeInput').value,'code');
+ if(code){$('codeEnterMessage').textContent='Match opened successfully.'}
+});
+$('aiLoadMatch')?.addEventListener('click',()=>openMatchFromCode($('aiMatchCode').value,'ai'));
+$('aiScoreboardFile')?.addEventListener('change',e=>{
+ const file=e.target.files?.[0];state.aiImageData=null;$('aiSubmitEvidence').disabled=true;
+ if(!file){$('aiScoreboardPreview').classList.add('hidden');return}
+ if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>8*1024*1024){
+  $('aiSubmitStatus').textContent='Use a PNG, JPG or WEBP image up to 8 MB.';e.target.value='';return;
+ }
+ const reader=new FileReader();
+ reader.onload=()=>{state.aiImageData=reader.result;$('aiScoreboardPreview').src=reader.result;$('aiScoreboardPreview').classList.remove('hidden');$('aiSubmitEvidence').disabled=false;$('aiSubmitStatus').textContent='Image ready. Check that every player name and scoreboard statistic is readable.'};
+ reader.onerror=()=>{$('aiSubmitStatus').textContent='Could not read this image. Try another file.'};
+ reader.readAsDataURL(file);
+});
+$('aiClearEvidence')?.addEventListener('click',()=>{
+ $('aiScoreboardFile').value='';$('aiScoreboardPreview').removeAttribute('src');$('aiScoreboardPreview').classList.add('hidden');$('aiSubmitEvidence').disabled=true;state.aiImageData=null;$('aiSubmitStatus').textContent='Image cleared. No report was submitted.';
+});
+$('aiSubmitEvidence')?.addEventListener('click',()=>{
+ if(!state.aiSelectedMatchId||!state.aiImageData){$('aiSubmitStatus').textContent='Enter a valid match code and choose a scoreboard image first.';return}
+ $('aiSubmitStatus').textContent='The match and image are ready, but the live AI verification service is not connected to this page yet. No result or ELO change has been created.';
+ toast('AI backend is not connected yet. No ELO was changed.','error');
+});
+
+async function loadPlayers(){const box=$('playersList');box.replaceChildren();const term=$('playerSearch').value.trim();let query=state.sb.from('profiles').select('id,username,elo,wins,losses,bio,avatar_url').neq('id',state.user.id).order('elo',{ascending:false}).limit(50);if(term)query=query.ilike('username','%'+term.replace(/[%_]/g,'')+'%');const {data,error}=await query;if(error){box.textContent=error.message;return}if(!data?.length){box.innerHTML='<div class="empty-state panel" style="grid-column:1/-1">No players found yet. Invite friends to join the platform.</div>';return}data.forEach(p=>{const card=document.createElement('div');card.className='panel player-card';card.style.cursor='pointer';card.title='Open player career';card.addEventListener('click',()=>{state.careerUserId=p.id;showPage('career')});const av=document.createElement('div');av.className='avatar';paintAvatar(av,p.username,p.avatar_url);const content=document.createElement('div');content.className='grow';const name=document.createElement('strong');name.textContent=p.username||'Player';const meta=document.createElement('div');meta.className='meta';meta.textContent=`${p.elo??1000} ELO · ${p.wins??0}W / ${p.losses??0}L`;const bio=document.createElement('div');bio.className='meta';bio.textContent=p.bio||'Counter Flame player';content.append(name,meta,bio);card.append(av,content);box.append(card)})}
+$('searchPlayers').addEventListener('click',loadPlayers);$('playerSearch').addEventListener('keydown',e=>{if(e.key==='Enter')loadPlayers()});
+
+async function loadLeaderboard(){const body=$('leaderRows');body.replaceChildren();const {data,error}=await state.sb.from('profiles').select('id,username,elo,wins,losses').order('elo',{ascending:false}).limit(50);if(error){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=5;cell.textContent=error.message;row.append(cell);body.append(row);return}if(!data?.length){const row=document.createElement('tr'),cell=document.createElement('td');cell.colSpan=5;cell.textContent='No ranked players yet.';row.append(cell);body.append(row);return}data.forEach((p,i)=>{const row=document.createElement('tr');[String(i+1),p.username||'Player',String(p.elo??1000),String(p.wins??0),String(p.losses??0)].forEach((v,j)=>{const cell=document.createElement('td');cell.textContent=v;if(j===0)cell.className='rank';row.append(cell)});body.append(row)})}
+
+// AI result submission is intentionally guarded until a real server-side verifier is connected.
+async function boot(){if(!window.supabase){$('authMsg').textContent='Connection error: Supabase library did not load. Check your internet connection and refresh.';return}if(!window.CF_CONFIG?.url||!window.CF_CONFIG?.anonKey){$('authMsg').textContent='Configuration error: public Supabase settings are missing.';return}state.sb=window.supabase.createClient(window.CF_CONFIG.url,window.CF_CONFIG.anonKey);const {data,error}=await state.sb.auth.getSession();if(error){$('authMsg').textContent=error.message;return}if(data.session){state.user=data.session.user;try{await enterApp()}catch(err){$('authView').classList.remove('hidden');$('appView').classList.add('hidden');$('authMsg').textContent='Profile setup error: '+err.message}}state.sb.auth.onAuthStateChange(async(_event,session)=>{if(session?.user){state.user=session.user;try{await enterApp()}catch(err){toast(err.message,'error')}}else{state.user=null;state.profile=null;if(state.activeChannel)state.sb.removeChannel(state.activeChannel);if(state.queueChannel)state.sb.removeChannel(state.queueChannel);stopQueuePolling();$('appView').classList.add('hidden');$('authView').classList.remove('hidden');$('topUser').classList.add('hidden')}})}
+setLanguage('en');boot().catch(err=>{$('authMsg').textContent=err.message||'Could not initialize the app.'});
+
+/* ===== V5 COMMAND CENTER + PRACTICE REVIEW ===== */
+function cfV5Init(){
+ const tasks=[...document.querySelectorAll('[data-v5-task]')];
+ const saved=(()=>{try{return JSON.parse(localStorage.getItem('cf-v5-routine')||'{}')}catch(_){return {}}})();
+ function paintRoutine(){
+  let done=0;
+  tasks.forEach(el=>{el.checked=!!saved[el.dataset.v5Task];if(el.checked)done++});
+  const bar=document.getElementById('v5RoutineProgress');
+  const label=document.getElementById('v5RoutineLabel');
+  if(bar)bar.style.width=(done/Math.max(tasks.length,1)*100)+'%';
+  if(label)label.textContent=done+' / '+tasks.length+' completed · Your routine stays on this device.';
+ }
+ tasks.forEach(el=>el.addEventListener('change',()=>{
+  saved[el.dataset.v5Task]=el.checked;
+  try{localStorage.setItem('cf-v5-routine',JSON.stringify(saved))}catch(_){}
+  paintRoutine();
+ }));
+ paintRoutine();
+
+ const name=document.getElementById('welcomeName')?.textContent?.trim()||'PLAYER';
+ const rating=document.getElementById('statElo')?.textContent?.trim()||'1000';
+ const handle=document.getElementById('v5PlayerHandle');
+ const elo=document.getElementById('v5PlayerRating');
+ if(handle)handle.textContent=name.toUpperCase().slice(0,18)+' / CF';
+ if(elo)elo.textContent=rating+' ELO';
+
+ const form=document.getElementById('v5StatsForm');
+ if(!form)return;
+ const safeNum=id=>Math.max(0,Math.min(999,Number(document.getElementById(id)?.value)||0));
+ form.addEventListener('submit',event=>{
+  event.preventDefault();
+  const kills=safeNum('v5Kills'),deaths=safeNum('v5Deaths'),hs=safeNum('v5Headshots');
+  const kd=deaths===0?(kills>0?'∞':'0.00'):(kills/deaths).toFixed(2);
+  const hsRate=kills===0?'0.0%':(Math.min(hs,kills)/kills*100).toFixed(1)+'%';
+  const note=deaths===0&&kills>0?'No deaths entered':(kills/deaths>=1.5?'Strong K/D sample':(kills/deaths>=1?'Even trade sample':'Review duel choices'));
+  document.getElementById('v5KD').textContent=kd;
+  document.getElementById('v5HS').textContent=hsRate;
+  document.getElementById('v5ReviewNote').textContent=note;
+  const tips=[];
+  if(deaths>kills)tips.push('Review the first duel in each round: were you isolated or without teammate support?');
+  else tips.push('Keep repeating the positions and opening decisions that helped you win duels.');
+  if(kills>0&&hs/kills<.25)tips.push('Try a short crosshair-placement routine and keep aim at likely opponent head height.');
+  else tips.push('Keep your aim routine consistent; avoid changing sensitivity after one match.');
+  if(deaths>=10)tips.push('Watch two of your deaths back and note the position, timing and teammate spacing.');
+  else tips.push('Build a simple team communication plan before the next queue.');
+  const box=document.getElementById('v5PracticeTips');
+  box.replaceChildren(...tips.map(t=>{const el=document.createElement('span');el.textContent='• '+t;return el}));
+ });
+}
+cfV5Init();
+
+})();
+</script>
+</body></html>
