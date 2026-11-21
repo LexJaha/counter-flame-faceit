@@ -14,6 +14,7 @@ A dark, orange-accented competitive community platform built with Next.js, TypeS
 - Result submission with a moderator review gate before any ELO update.
 - Editable player profiles (username and bio) backed by Supabase.
 - Player search and one-to-one direct messages with block-aware messaging rules and realtime delivery.
+- Team creation, public squad discovery, five-player roster limits and team membership controls.
 - Account blocking and user reports stored under Row Level Security.
 
 ## Important verification limitation
@@ -64,7 +65,7 @@ The publishable key is intended for browser use; Row Level Security policies pro
 
 The V1000 name is the long-term product track, not a claim that one thousand releases or every roadmap feature is complete. Next milestones:
 
-- **V2:** team management, member roles and team invites.
+- **V2:** team invitations, captain transfers and team management extensions.
 - **V3:** tournaments, brackets, check-ins and match scheduling.
 - **V4:** moderator console, disputes, audit history and moderation analytics.
 - **V5:** notifications, achievements, seasons and rewards.
