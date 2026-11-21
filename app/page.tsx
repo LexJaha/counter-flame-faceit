@@ -80,6 +80,10 @@ export default function Home() {
   const [language, setLanguage] = useState<"en"|"tr">("en");
   const [aiResult, setAiResult] = useState<any>(null);
   const [aiBusy, setAiBusy] = useState(false);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminPasswordInput, setAdminPasswordInput] = useState("");
+  const [adminLoginBusy, setAdminLoginBusy] = useState(false);
+  const [adminUnlocked, setAdminUnlocked] = useState(false);
   const tx = (en: string, tr: string) => language === "tr" ? tr : en;
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -682,7 +686,7 @@ export default function Home() {
         <div className="top-actions">
           <select aria-label="Language" className="cf-language-select" value={language} onChange={e=>changeLanguage(e.target.value as "en"|"tr")}><option value="en">English</option><option value="tr">Türkçe</option></select>
           <span className="season-pill"><span/> SEASON 01 · BETA</span>
-          {user ? <><span className="user-chip"><span className="avatar">{(profile?.username || user.email || "P").slice(0,1).toUpperCase()}</span><b>{profile?.username || user.email}</b></span><button className="icon-btn" onClick={signOut} title="Sign out"><LogOut size={17}/></button></> : <span className="online-pill">SYSTEM ONLINE</span>}
+          {user ? <><span className="user-chip"><span className="avatar">{(profile?.username || user.email || "P").slice(0,1).toUpperCase()}</span><b>{profile?.username || user.email}</b></span><button className="icon-btn" onClick={signOut} title="Sign out"><LogOut size={17}/></button></> : <button className="btn-primary compact" onClick={()=>setShowAdminLogin(true)}>LOGIN <ChevronRight size={14}/></button><span className="online-pill">SYSTEM ONLINE</span>}
         </div>
       </header>
 
@@ -739,7 +743,7 @@ export default function Home() {
       </nav>
       {mobileMoreOpen && <div className="mobile-more-panel">
         <div className="mobile-more-heading"><b>Diğer bölümler</b><button onClick={()=>setMobileMoreOpen(false)} aria-label="Menüyü kapat"><X size={18}/></button></div>
-        {navItems.filter(item=>(item.id!=="admin"||isModerator)&&!["overview","matchmaking","room","leaderboard","profile"].includes(item.id)).map(item=>
+        {navItems.filter(item=>(item.id!=="admin"||(isModerator&&adminUnlocked))&&!["overview","matchmaking","room","leaderboard","profile"].includes(item.id)).map(item=>
           <button key={item.id} className={view===item.id?"mobile-more-link active":"mobile-more-link"} onClick={()=>{setView(item.id);setMobileMoreOpen(false);}}>
             <item.icon size={17}/><span>{item.label}</span><ChevronRight size={15}/>
           </button>
@@ -747,6 +751,8 @@ export default function Home() {
       </div>}
 
       {notice && <div className="notice"><span>{notice}</span><button onClick={() => setNotice("")}><X size={16}/></button></div>}
+
+      {showAdminLogin && <div className="admin-login-overlay"><div className="admin-login-card"><button className="admin-login-close" onClick={()=>setShowAdminLogin(false)} aria-label="Close"><X size={18}/></button><span className="eyebrow">COUNTERFLAME CONTROL</span><h2>ADMIN LOGIN</h2><p>Enter the administrator password to continue.</p><input className="cf-input" type="password" autoComplete="current-password" placeholder="Admin password" value={adminPasswordInput} onChange={e=>setAdminPasswordInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter") void (async()=>{setAdminLoginBusy(true);try{const r=await fetch("/api/admin-login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:adminPasswordInput})});const j=await r.json();if(!r.ok)throw new Error(j.error||"Login failed");setAdminUnlocked(true);setShowAdminLogin(false);setAdminPasswordInput("");setNotice("Admin password accepted.");if(user)setView("admin");}catch(err:any){setNotice(err.message||"Admin login failed.");}finally{setAdminLoginBusy(false);}}();}}/><button className="btn-primary full" disabled={!adminPasswordInput||adminLoginBusy} onClick={async()=>{setAdminLoginBusy(true);try{const r=await fetch("/api/admin-login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:adminPasswordInput})});const j=await r.json();if(!r.ok)throw new Error(j.error||"Login failed");setAdminUnlocked(true);setShowAdminLogin(false);setAdminPasswordInput("");setNotice("Admin password accepted.");if(user)setView("admin");}catch(err:any){setNotice(err.message||"Admin login failed.");}finally{setAdminLoginBusy(false);}}}>{adminLoginBusy?"CHECKING…":"LOGIN TO ADMIN"} <ShieldCheck size={15}/></button><small>Password is checked on the server and is never stored in the browser.</small></div></div>}
 
       <div className="content-area">
       {!user ? (
@@ -846,13 +852,13 @@ export default function Home() {
               <div className="settings-row"><div><b>Signed-in account</b><small>{user.email}</small></div><span className="tag-muted">AUTHENTICATED</span></div>
               <div className="settings-row"><div><b>Database protection</b><small>Supabase Row Level Security is active on player and match data.</small></div><span className="tag-orange">RLS ON</span></div>
               <div className="settings-row"><div><b>Change password</b><small>Send a secure password reset link to your account email.</small></div><button className="btn-ghost compact" onClick={async()=>{const {error}=await supabase!.auth.resetPasswordForEmail(user.email!);setNotice(error?error.message:"Password reset email requested.");}}>SEND RESET</button></div>
-              {isModerator ? <div className="admin-settings-entry"><div className="admin-entry-icon"><ShieldCheck size={19}/></div><div><b>ADMIN PANELİ</b><small>ELO ve oyuncu istatistiklerini yönet.</small></div><button className="btn-primary compact" onClick={()=>setView("admin")}>AÇ <ChevronRight size={14}/></button></div> : <div className="settings-row"><div><b>Yönetici araçları</b><small>Admin paneli yalnızca yetkilendirilmiş hesaplarda görünür.</small></div><span className="tag-muted">KİLİTLİ</span></div>}
+              {isModerator && adminUnlocked ? <div className="admin-settings-entry"><div className="admin-entry-icon"><ShieldCheck size={19}/></div><div><b>ADMIN PANELİ</b><small>ELO ve oyuncu istatistiklerini yönet.</small></div><button className="btn-primary compact" onClick={()=>setView("admin")}>AÇ <ChevronRight size={14}/></button></div> : <div className="settings-row"><div><b>Yönetici araçları</b><small>Admin paneli yalnızca yetkilendirilmiş hesaplarda görünür.</small></div><span className="tag-muted">KİLİTLİ</span></div>}
               <button className="btn-ghost" onClick={signOut}><LogOut size={15}/> SIGN OUT</button>
             </div>}
 
             {view==="admin" && <div className="panel-card real-module admin-page">
               <div className="section-heading"><div><span className="eyebrow">COUNTERFLAME CONTROL</span><h2>ADMIN PANELİ</h2><p>Kendi hesabın dahil oyuncuların ELO ve K/D istatistiklerini yönet.</p></div><ShieldCheck className="heading-icon"/></div>
-              {!isModerator ? <div className="empty-list"><ShieldCheck size={24}/><b>Yetki gerekli</b><span>Bu alan yalnızca CounterFlame yöneticilerine açıktır.</span></div> : <>
+              {!adminUnlocked ? <div className="empty-list"><ShieldCheck size={24}/><b>Admin login required</b><span>Use the LOGIN button in the top bar first.</span><button className="btn-primary" onClick={()=>setShowAdminLogin(true)}>LOGIN</button></div> : !isModerator ? <div className="empty-list"><ShieldCheck size={24}/><b>Moderator permission required</b><span>Password accepted, but this signed-in account is not yet assigned the moderator role. Admin actions remain protected by the database.</span></div> : <>
                 <div className="admin-warning"><ShieldCheck size={17}/><span>Yönetici işlemleri sunucu tarafında yetki kontrolünden geçer. Herkes bu değerleri değiştiremez.</span></div>
                 <div className="admin-stat-strip"><div><small>OYUNCU SAYISI</small><b>{adminPlayers.length}</b></div><div><small>SEÇİLİ HESAP</small><b>{adminPlayers.find(p=>p.id===adminTargetId)?.username || "—"}</b></div><div><small>YETKİ</small><b>ADMIN</b></div></div>
                 <label className="field-label">OYUNCU SEÇ · KENDİNİ DE SEÇEBİLİRSİN</label>
