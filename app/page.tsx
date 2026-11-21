@@ -536,6 +536,29 @@ export default function Home() {
     if (error) setNotice(error.message);
   }
 
+  async function loginAdmin() {
+    if (!adminPasswordInput || adminLoginBusy) return;
+    setAdminLoginBusy(true);
+    try {
+      const response = await fetch("/api/admin-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: adminPasswordInput }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Login failed");
+      setAdminUnlocked(true);
+      setShowAdminLogin(false);
+      setAdminPasswordInput("");
+      setNotice("Admin password accepted.");
+      if (user) setView("admin");
+    } catch (error: any) {
+      setNotice(error.message || "Admin login failed.");
+    } finally {
+      setAdminLoginBusy(false);
+    }
+  }
+
   async function runAiAnalysis() {
     if (!evidenceFile) return;
     setAiBusy(true); setAiResult(null);
@@ -753,7 +776,7 @@ export default function Home() {
 
       {notice && <div className="notice"><span>{notice}</span><button onClick={() => setNotice("")}><X size={16}/></button></div>}
 
-      {showAdminLogin && <div className="admin-login-overlay"><div className="admin-login-card"><button className="admin-login-close" onClick={()=>setShowAdminLogin(false)} aria-label="Close"><X size={18}/></button><span className="eyebrow">COUNTERFLAME CONTROL</span><h2>ADMIN LOGIN</h2><p>Enter the administrator password to continue.</p><input className="cf-input" type="password" autoComplete="current-password" placeholder="Admin password" value={adminPasswordInput} onChange={e=>setAdminPasswordInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter") void (async()=>{setAdminLoginBusy(true);try{const r=await fetch("/api/admin-login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:adminPasswordInput})});const j=await r.json();if(!r.ok)throw new Error(j.error||"Login failed");setAdminUnlocked(true);setShowAdminLogin(false);setAdminPasswordInput("");setNotice("Admin password accepted.");if(user)setView("admin");}catch(err:any){setNotice(err.message||"Admin login failed.");}finally{setAdminLoginBusy(false);}}();}}/><button className="btn-primary full" disabled={!adminPasswordInput||adminLoginBusy} onClick={async()=>{setAdminLoginBusy(true);try{const r=await fetch("/api/admin-login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:adminPasswordInput})});const j=await r.json();if(!r.ok)throw new Error(j.error||"Login failed");setAdminUnlocked(true);setShowAdminLogin(false);setAdminPasswordInput("");setNotice("Admin password accepted.");if(user)setView("admin");}catch(err:any){setNotice(err.message||"Admin login failed.");}finally{setAdminLoginBusy(false);}}}>{adminLoginBusy?"CHECKING…":"LOGIN TO ADMIN"} <ShieldCheck size={15}/></button><small>Password is checked on the server and is never stored in the browser.</small></div></div>}
+      {showAdminLogin && <div className="admin-login-overlay"><div className="admin-login-card"><button className="admin-login-close" onClick={() => setShowAdminLogin(false)} aria-label="Close"><X size={18}/></button><span className="eyebrow">COUNTERFLAME CONTROL</span><h2>ADMIN LOGIN</h2><p>Enter the administrator password to continue.</p><input className="cf-input" type="password" autoComplete="current-password" placeholder="Admin password" value={adminPasswordInput} onChange={e => setAdminPasswordInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") void loginAdmin(); }}/><button className="btn-primary full" disabled={!adminPasswordInput || adminLoginBusy} onClick={() => void loginAdmin()}>{adminLoginBusy ? "CHECKING…" : "LOGIN TO ADMIN"} <ShieldCheck size={15}/></button><small>Password is checked on the server and is never stored in the browser.</small></div></div>}
 
       <div className="content-area">
       {!user ? (
