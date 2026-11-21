@@ -701,7 +701,7 @@ export default function Home() {
       </nav>
       {mobileMoreOpen && <div className="mobile-more-panel">
         <div className="mobile-more-heading"><b>Diğer bölümler</b><button onClick={()=>setMobileMoreOpen(false)} aria-label="Menüyü kapat"><X size={18}/></button></div>
-        {navItems.filter(item=>!["overview","matchmaking","room","leaderboard","profile"].includes(item.id)).map(item=>
+        {navItems.filter(item=>(item.id!=="admin"||isModerator)&&!["overview","matchmaking","room","leaderboard","profile"].includes(item.id)).map(item=>
           <button key={item.id} className={view===item.id?"mobile-more-link active":"mobile-more-link"} onClick={()=>{setView(item.id);setMobileMoreOpen(false);}}>
             <item.icon size={17}/><span>{item.label}</span><ChevronRight size={15}/>
           </button>
