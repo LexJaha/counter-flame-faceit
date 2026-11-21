@@ -121,7 +121,7 @@ export default function Home() {
     const ids = threads.map((thread: any) => thread.conversation_id);
     const peerIds = threads.map((thread: any) => thread.user_low === user.id ? thread.user_high : thread.user_low);
     const [{ data: people }, { data: latest }] = await Promise.all([
-      supabase.from("profiles").select("id,username,elo,wins,losses,matches_played").in("id", peerIds),
+      supabase.from("profiles").select("id,username,elo,wins,losses,matches_played,avatar_url").in("id", peerIds),
       supabase.from("cf_messages").select("conversation_id,body,created_at").in("conversation_id", ids).order("created_at", { ascending: false }).limit(100)
     ]);
     const list = threads.map((thread: any) => {
