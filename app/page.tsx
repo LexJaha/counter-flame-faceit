@@ -514,10 +514,15 @@ export default function Home() {
   }
 
   async function joinByCode() {
-    if (!supabase || joinCode.length !== 6) return;
+    const code = joinCode.trim().replace(/\s+/g, "");
+    // Accept existing five-digit room codes as well as six-digit codes.
+    if (!supabase || !/^\d{5,6}$/.test(code)) {
+      setNotice("Match code must contain 5 or 6 digits.");
+      return;
+    }
     setBusy(true); setNotice("");
     try {
-      const { data, error } = await supabase.rpc("cf_join_match_by_code", { p_code: joinCode });
+      const { data, error } = await supabase.rpc("cf_join_match_by_code", { p_code: code });
       if (error) throw error;
       await loadMatch(data);
       setView("room");
