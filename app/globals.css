@@ -1015,3 +1015,9 @@ body{background-color:#07090d;background-image:radial-gradient(ellipse at 72% 0%
  .admin-player-details small{font-size:8px}
  .admin-player-row strong{font-size:9px}
 }
+
+.avatar img,.player-avatar img,.profile-large-avatar img,.leader-avatar img{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.avatar,.player-avatar,.profile-large-avatar,.leader-avatar{overflow:hidden}
+.avatar-file-input{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.avatar-upload-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:-4px 0 18px}
+.avatar-upload-row .btn-ghost{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
