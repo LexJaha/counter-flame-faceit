@@ -949,3 +949,18 @@ body{background-color:#07090d;background-image:radial-gradient(ellipse at 72% 0%
  .admin-settings-entry small{font-size:8px}
  .admin-stat-strip small{font-size:7px}
 }
+
+
+/* Language selector and AI result */
+.cf-language-select {
+  appearance: none; border: 1px solid rgba(255,255,255,.13); border-radius: 10px;
+  background: rgba(255,255,255,.055); color: #f5f5f5; padding: 9px 30px 9px 12px;
+  font: inherit; font-size: 12px; font-weight: 800; letter-spacing: .04em; cursor: pointer;
+}
+.cf-language-select option { background: #171717; color: #fff; }
+.language-welcome-label { display:block; margin: 0 0 7px; color: #f18a37; font-size: 10px; font-weight: 900; letter-spacing: .16em; }
+.ai-result-card { margin-top: 18px; padding: 20px; border: 1px solid rgba(255,132,45,.28); border-radius: 16px; background: linear-gradient(145deg,rgba(255,132,45,.09),rgba(255,255,255,.025)); }
+.ai-result-card > b { color: #ff9a4b; letter-spacing: .12em; font-size: 12px; }
+.ai-result-card p { color: #e8e8e8; line-height: 1.6; }
+.ai-result-card small { display:block; color:#aaa; margin-top:12px; }
+@media(max-width:700px) { .cf-language-select { padding:8px 9px; font-size:11px; } }
