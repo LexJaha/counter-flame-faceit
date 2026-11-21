@@ -174,14 +174,14 @@ export default function Home() {
   }, [user]);
 
   const loadAdminPlayers = useCallback(async () => {
-    if (!supabase || !isModerator) return;
+    if (!supabase || !adminUnlocked) return;
     const { data, error } = await supabase.from("profiles").select("id,username,elo,wins,losses,matches_played,kills,deaths").order("elo", { ascending: false }).limit(250);
     if (error) { setNotice(error.message); return; }
     const rows = (data || []) as Profile[];
     setAdminPlayers(rows);
     const selected = rows.find(row => row.id === adminTargetId) || rows.find(row => row.id === user?.id) || rows[0];
     if (selected) { setAdminTargetId(selected.id); setAdminElo(String(selected.elo)); setAdminKills(String(selected.kills ?? 0)); setAdminDeaths(String(selected.deaths ?? 0)); }
-  }, [isModerator, adminTargetId, user?.id]);
+  }, [adminUnlocked, adminTargetId, user?.id]);
 
   const loadLeaderboard = useCallback(async () => {
     if (!supabase) return;
@@ -772,7 +772,7 @@ export default function Home() {
           {name:"COMMUNITY", title:"TOPLULUK", hint:"Sosyal alanlar"},
           {name:"ACCOUNT", title:"OYUNCU", hint:"Profil ve tercihler"}
         ].map(section => {
-          const groupItems = navItems.filter(item => (item.id !== "admin" || (isModerator && adminUnlocked)) && (
+          const groupItems = navItems.filter(item => (item.id !== "admin" || adminUnlocked) && (
             section.name==="OVERVIEW" ? item.group==="ANA MENÜ" :
             section.name==="PLAY" ? item.group==="OYNA" :
             section.name==="COMPETE" ? item.group==="REKABET" :
@@ -920,13 +920,13 @@ export default function Home() {
               <div className="settings-row"><div><b>Signed-in account</b><small>{user.email}</small></div><span className="tag-muted">AUTHENTICATED</span></div>
               <div className="settings-row"><div><b>Database protection</b><small>Supabase Row Level Security is active on player and match data.</small></div><span className="tag-orange">RLS ON</span></div>
               <div className="settings-row"><div><b>Change password</b><small>Send a secure password reset link to your account email.</small></div><button className="btn-ghost compact" onClick={async()=>{const {error}=await supabase!.auth.resetPasswordForEmail(user.email!);setNotice(error?error.message:"Password reset email requested.");}}>SEND RESET</button></div>
-              {isModerator && adminUnlocked ? <div className="admin-settings-entry"><div className="admin-entry-icon"><ShieldCheck size={19}/></div><div><b>ADMIN PANELİ</b><small>ELO ve oyuncu istatistiklerini yönet.</small></div><button className="btn-primary compact" onClick={()=>setView("admin")}>AÇ <ChevronRight size={14}/></button></div> : <div className="settings-row"><div><b>Yönetici araçları</b><small>Admin paneli yalnızca yetkilendirilmiş hesaplarda görünür.</small></div><span className="tag-muted">KİLİTLİ</span></div>}
+              {adminUnlocked ? <div className="admin-settings-entry"><div className="admin-entry-icon"><ShieldCheck size={19}/></div><div><b>ADMIN PANELİ</b><small>ELO ve oyuncu istatistiklerini yönet.</small></div><button className="btn-primary compact" onClick={()=>setView("admin")}>AÇ <ChevronRight size={14}/></button></div> : <div className="settings-row"><div><b>Yönetici araçları</b><small>Admin paneli yalnızca yetkilendirilmiş hesaplarda görünür.</small></div><span className="tag-muted">KİLİTLİ</span></div>}
               <button className="btn-ghost" onClick={signOut}><LogOut size={15}/> SIGN OUT</button>
             </div>}
 
             {view==="admin" && <div className="panel-card real-module admin-page">
               <div className="section-heading"><div><span className="eyebrow">COUNTERFLAME CONTROL</span><h2>ADMIN PANELİ</h2><p>Kendi hesabın dahil oyuncuların ELO ve K/D istatistiklerini yönet.</p></div><ShieldCheck className="heading-icon"/></div>
-              {!adminUnlocked ? <div className="empty-list"><ShieldCheck size={24}/><b>Admin login required</b><span>Use the LOGIN button in the top bar first.</span><button className="btn-primary" onClick={()=>setShowAdminLogin(true)}>LOGIN</button></div> : !isModerator ? <div className="empty-list"><ShieldCheck size={24}/><b>Moderator permission required</b><span>Password accepted, but this signed-in account is not yet assigned the moderator role. Admin actions remain protected by the database.</span></div> : <>
+              {!adminUnlocked ? <div className="empty-list"><ShieldCheck size={24}/><b>Admin login required</b><span>Use the LOGIN button in the top bar first.</span><button className="btn-primary" onClick={()=>setShowAdminLogin(true)}>LOGIN</button></div> : <>
                 <div className="admin-warning"><ShieldCheck size={17}/><span>Yönetici işlemleri sunucu tarafında yetki kontrolünden geçer. Herkes bu değerleri değiştiremez.</span></div>
                 <div className="admin-stat-strip"><div><small>OYUNCU SAYISI</small><b>{adminPlayers.length}</b></div><div><small>SEÇİLİ HESAP</small><b>{adminPlayers.find(p=>p.id===adminTargetId)?.username || "—"}</b></div><div><small>YETKİ</small><b>ADMIN</b></div></div>
                 <label className="field-label">OYUNCU SEÇ · KENDİNİ DE SEÇEBİLİRSİN</label>
