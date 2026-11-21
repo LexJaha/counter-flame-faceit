@@ -179,9 +179,21 @@ export default function Home() {
     if (error) { setNotice(error.message); return; }
     const rows = (data || []) as Profile[];
     setAdminPlayers(rows);
-    const selected = rows.find(row => row.id === adminTargetId) || rows.find(row => row.id === user?.id) || rows[0];
-    if (selected) { setAdminTargetId(selected.id); setAdminElo(String(selected.elo)); setAdminKills(String(selected.kills ?? 0)); setAdminDeaths(String(selected.deaths ?? 0)); }
-  }, [adminUnlocked, adminTargetId, user?.id]);
+    setAdminTargetId(currentId => {
+      const selected = rows.find(row => row.id === currentId) || rows.find(row => row.id === user?.id) || rows[0];
+      if (selected) {
+        setAdminElo(String(selected.elo));
+        setAdminKills(String(selected.kills ?? 0));
+        setAdminDeaths(String(selected.deaths ?? 0));
+        return selected.id;
+      }
+      return currentId;
+    });
+  }, [adminUnlocked, user?.id]);
+
+  useEffect(() => {
+    if (adminUnlocked) void loadAdminPlayers();
+  }, [adminUnlocked, loadAdminPlayers]);
 
   const loadLeaderboard = useCallback(async () => {
     if (!supabase) return;
