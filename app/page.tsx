@@ -560,15 +560,59 @@ export default function Home() {
   }
 
   async function runAiAnalysis() {
-    if (!evidenceFile) return;
+    if (!evidenceFile) { setNotice("Önce maç ekran görüntüsünü seç."); return; }
+    if (!session?.access_token) { setNotice("AI analizi için önce hesabına giriş yap."); return; }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(evidenceFile.type)) {
+      setNotice("Yalnızca JPG, PNG veya WebP görsel yükleyebilirsin."); return;
+    }
     setAiBusy(true); setAiResult(null);
     try {
-      const image = await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=()=>reject(new Error("Could not read image"));reader.readAsDataURL(evidenceFile);});
-      const response = await fetch("/api/ai-match-analysis",{method:"POST",headers:{"Content-Type":"application/json",...(session?.access_token?{Authorization:"Bearer "+session.access_token}:{})},body:JSON.stringify({image})});
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "AI analysis failed");
+      // Vercel Functions have a small request-body limit. Resize/compress in-browser
+      // so screenshots reliably fit before sending the base64 payload.
+      const bitmap = await createImageBitmap(evidenceFile);
+      const maxSide = 1800;
+      const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Görsel işleme başlatılamadı.");
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      bitmap.close();
+      const toBlob = (quality: number) => new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("Görsel sıkıştırılamadı.")), "image/jpeg", quality);
+      });
+      let compressed = await toBlob(0.88);
+      if (compressed.size > 2_800_000) compressed = await toBlob(0.76);
+      if (compressed.size > 2_800_000) {
+        const smaller = document.createElement("canvas");
+        const factor = Math.sqrt(2_800_000 / compressed.size) * 0.92;
+        smaller.width = Math.max(1, Math.round(canvas.width * factor));
+        smaller.height = Math.max(1, Math.round(canvas.height * factor));
+        const smallerContext = smaller.getContext("2d");
+        if (!smallerContext) throw new Error("Görsel küçültülemedi.");
+        smallerContext.drawImage(canvas, 0, 0, smaller.width, smaller.height);
+        compressed = await new Promise<Blob>((resolve, reject) => {
+          smaller.toBlob(blob => blob ? resolve(blob) : reject(new Error("Görsel sıkıştırılamadı.")), "image/jpeg", 0.76);
+        });
+      }
+      if (compressed.size > 2_800_000) throw new Error("Görsel çok büyük. Daha küçük bir ekran görüntüsü seç.");
+      const image = await new Promise<string>((resolve,reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("Görsel okunamadı."));
+        reader.readAsDataURL(compressed);
+      });
+      const response = await fetch("/api/ai-match-analysis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + session.access_token },
+        body: JSON.stringify({ image })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "AI analizi başarısız.");
+      if (!payload.analysis || !Array.isArray(payload.analysis.player_cards)) throw new Error("AI beklenmeyen bir sonuç döndürdü. Tekrar dene.");
       setAiResult(payload.analysis);
-    } catch(error:any) { setNotice(error.message || "AI analysis failed."); }
+    } catch(error:any) { setNotice(error.message || "AI analizi başarısız."); }
     finally { setAiBusy(false); }
   }
 
