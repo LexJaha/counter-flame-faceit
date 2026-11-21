@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { verifyAdminCookie } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function isAdmin(request: Request) {
-  const cookie = request.headers.get("cookie") || "";
-  return cookie.split(";").some((part) => part.trim() === "cf_admin_gate=1");
-}
 
 function getAdminDb() {
   const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -19,7 +16,7 @@ function getAdminDb() {
 }
 
 export async function GET(request: Request) {
-  if (!isAdmin(request)) return NextResponse.json({ error: "Admin login required." }, { status: 401 });
+  if (!verifyAdminCookie(request)) return NextResponse.json({ error: "Admin login required." }, { status: 401 });
   try {
     const db = getAdminDb();
     const { data, error } = await db.from("profiles")
