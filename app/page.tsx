@@ -19,6 +19,7 @@ type DirectMessage = { id: string; conversation_id: string; sender_id: string; b
 type TeamMember = { user_id: string; username: string; elo: number; role: string };
 type TeamData = { id: string; name: string; tag: string; description: string; role: string; members: TeamMember[] };
 type TeamListing = { id: string; name: string; tag: string; description: string; member_count: number };
+type AppNotification = { id: string; kind: string; title: string; body: string; link: string; read_at: string | null; created_at: string };
 
 const modes = ["1v1", "2v2", "3v3", "4v4", "5v5"];
 const maps = ["Random", "Harbor", "Factory", "Outpost", "District"];
@@ -58,6 +59,7 @@ export default function Home() {
   const [teamName, setTeamName] = useState("");
   const [teamTag, setTeamTag] = useState("");
   const [teamDescription, setTeamDescription] = useState("");
+  const [appNotifications, setAppNotifications] = useState<AppNotification[]>([]);
   const [isModerator, setIsModerator] = useState(false);
   const [view, setView] = useState("overview");
   const [email, setEmail] = useState("");
@@ -111,6 +113,13 @@ export default function Home() {
       .eq("conversation_id", conversationId).order("created_at", { ascending: true }).limit(100);
     if (!error) setDirectMessages((data || []) as DirectMessage[]);
   }, []);
+
+  const loadNotifications = useCallback(async () => {
+    if (!supabase || !user) return;
+    const { data, error } = await supabase.from("cf_notifications").select("*")
+      .order("created_at", { ascending: false }).limit(50);
+    if (!error) setAppNotifications((data || []) as AppNotification[]);
+  }, [user]);
 
   const loadTeams = useCallback(async () => {
     if (!supabase || !user) return;
@@ -202,13 +211,23 @@ export default function Home() {
     void loadLeaderboard();
     void loadConversations();
     void loadTeams();
+    void loadNotifications();
     supabase?.rpc("cf_is_moderator").then(({ data }) => setIsModerator(Boolean(data)));
-  }, [user, loadProfile, loadMatches, loadLeaderboard, loadConversations, loadTeams]);
+  }, [user, loadProfile, loadMatches, loadLeaderboard, loadConversations, loadTeams, loadNotifications]);
 
   useEffect(() => {
     setProfileUsername(profile?.username || "");
     setProfileBio(profile?.bio || "");
   }, [profile?.id, profile?.username, profile?.bio]);
+
+  useEffect(() => {
+    if (!user || !supabase) return;
+    const channel = supabase.channel("cf-notifications-" + user.id)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "cf_notifications", filter: "user_id=eq." + user.id },
+        (payload) => setAppNotifications(old => [payload.new as AppNotification, ...old.filter(item => item.id !== (payload.new as any).id)].slice(0,50)))
+      .subscribe();
+    return () => { void supabase?.removeChannel(channel); };
+  }, [user?.id]);
 
   useEffect(() => {
     if (!activeConversation || !supabase) return;
@@ -267,6 +286,13 @@ export default function Home() {
         : "Welcome to CounterFlame.");
     } catch (error: any) { setNotice(error.message || "Authentication failed."); }
     finally { setBusy(false); }
+  }
+
+  async function markNotificationsRead() {
+    if (!supabase) return;
+    const { error } = await supabase.rpc("cf_mark_notifications_read");
+    if (error) setNotice(error.message);
+    else { setAppNotifications(old => old.map(item => ({ ...item, read_at: item.read_at || new Date().toISOString() }))); }
   }
 
   async function createTeam() {
@@ -611,6 +637,12 @@ export default function Home() {
               <button className="btn-ghost" onClick={signOut}><LogOut size={15}/> SIGN OUT</button>
             </div>}
 
+            {view==="notifications" && <div className="panel-card real-module">
+              <div className="section-heading"><div><span className="eyebrow">ACCOUNT ACTIVITY</span><h2>BİLDİRİMLER</h2><p>Mesajlar, takım hareketleri ve maç kararları.</p></div><Bell className="heading-icon"/></div>
+              <div className="notification-toolbar"><span>{appNotifications.filter(item=>!item.read_at).length} UNREAD</span><button className="btn-ghost compact" disabled={!appNotifications.some(item=>!item.read_at)} onClick={markNotificationsRead}>MARK ALL READ <CheckCircle2 size={14}/></button></div>
+              {appNotifications.length===0?<div className="empty-list"><Bell size={22}/><b>No notifications yet</b><span>New messages and match updates will appear here.</span></div>:<div className="notification-list">{appNotifications.map(item=><button key={item.id} className={item.read_at?"notification-row":"notification-row unread"} onClick={()=>{setView(item.link==="teams"?"teams":item.link==="messages"?"messages":"room");if(!item.read_at){void supabase?.from("cf_notifications").update({read_at:new Date().toISOString()}).eq("id",item.id);setAppNotifications(old=>old.map(n=>n.id===item.id?{...n,read_at:new Date().toISOString()}:n));}}}><span className="notification-icon">{item.kind==="direct_message"?<MessageSquare size={16}/>:item.kind==="team_join"?<Users size={16}/>:<Trophy size={16}/>}</span><span className="notification-copy"><b>{item.title}</b><small>{item.body}</small><time>{new Date(item.created_at).toLocaleString("tr-TR")}</time></span>{!item.read_at&&<i className="notification-unread-dot"/>}</button>)}</div>}
+            </div>}
+
             {view==="messages" && <div className="panel-card real-module dm-module">
               <div className="section-heading"><div><span className="eyebrow">PLAYER NETWORK</span><h2>DIRECT MESSAGES</h2><p>Oyuncularla bire bir sohbet. Engellenen hesaplar mesaj gönderemez.</p></div><MessageSquare className="heading-icon"/></div>
               <div className="dm-search"><input className="cf-input" value={playerSearch} onChange={e=>setPlayerSearch(e.target.value)} placeholder="Oyuncu adı ara..." onKeyDown={e=>{if(e.key==="Enter")void searchPlayers();}}/><button className="btn-primary" onClick={searchPlayers}><Search size={16}/> SEARCH</button></div>
@@ -622,7 +654,7 @@ export default function Home() {
                 </div></div>
             </div>}
 
-            {["teams","tournaments","notifications"].includes(view) && <div className="panel-card feature-placeholder">
+            {["tournaments"].includes(view) && <div className="panel-card feature-placeholder">
               <span className="tag-orange">ROADMAP MODULE</span>
               <h2>{navItems.find(item=>item.id===view)?.label}</h2>
               <p className="muted">Bu modüller için henüz üretim veritabanı tabloları ve güvenlik kuralları tamamlanmadı. Gerçek işlevler hazır olana kadar sahte içerik gösterilmiyor.</p>
