@@ -1021,3 +1021,7 @@ body{background-color:#07090d;background-image:radial-gradient(ellipse at 72% 0%
 .avatar-file-input{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .avatar-upload-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:-4px 0 18px}
 .avatar-upload-row .btn-ghost{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+
+
+/* Official developer identity badge */
+.dev-badge{display:inline-flex;vertical-align:middle;align-items:center;justify-content:center;margin-left:7px;padding:3px 7px;border:1px solid rgba(255,190,95,.58);border-radius:6px;background:linear-gradient(135deg,rgba(255,190,95,.2),rgba(255,119,65,.13));color:#ffd18a;font-size:9px;font-weight:950;letter-spacing:.16em;line-height:1.2;text-shadow:0 0 12px rgba(255,190,95,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 14px rgba(255,166,77,.12)}
