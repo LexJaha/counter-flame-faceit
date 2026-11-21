@@ -667,7 +667,7 @@ export default function Home() {
             section.name==="PLAY" ? item.group==="OYNA" :
             section.name==="COMPETE" ? item.group==="REKABET" :
             section.name==="COMMUNITY" ? item.group==="SOSYAL" : item.group==="HESAP"
-          );
+          ));
           return <div className="menu-section" key={section.name}>
             <div className="menu-section-heading"><span>{section.title}</span><small>{String(groupItems.length).padStart(2,"0")}</small></div>
             {groupItems.map((item,index)=>(
