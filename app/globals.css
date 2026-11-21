@@ -578,3 +578,28 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;opa
  .dm-search .btn-primary{justify-content:center}
  .settings-row{align-items:flex-start;flex-direction:column}
 }
+
+/* Production squad management */
+.team-create-form{display:grid;gap:10px;margin:18px 0 26px;padding:17px;border:1px solid #2b303a;border-radius:13px;background:#14171e}
+.team-create-form>.eyebrow{margin-bottom:3px}
+.team-create-form .btn-primary{justify-self:start;display:flex;align-items:center;gap:8px}
+.team-identity{display:flex;align-items:center;gap:13px;margin:18px 0;padding:17px;border:1px solid rgba(255,137,88,.25);border-radius:13px;background:linear-gradient(110deg,rgba(255,137,88,.08),#151820)}
+.team-tag{width:48px;height:48px;flex:none;display:grid;place-items:center;border:1px solid rgba(255,137,88,.38);border-radius:13px;background:rgba(255,137,88,.1);color:#ff9a69;font-size:13px;font-weight:1000;letter-spacing:.08em}
+.team-identity>div:nth-child(2){flex:1;min-width:0}
+.team-identity b,.team-identity small{display:block}
+.team-identity b{font-size:16px}
+.team-identity small{margin-top:5px;color:#8993a1;font-size:8px;line-height:1.5}
+.team-roster{margin:12px 0 18px;border:1px solid #292e38;border-radius:12px;overflow:hidden}
+.team-roster-row{display:flex;align-items:center;gap:10px;padding:12px;border-bottom:1px solid #292e38}
+.team-roster-row:last-child{border-bottom:0}
+.team-roster-row>span:nth-child(2){flex:1}
+.team-roster-row b,.team-roster-row small{display:block}
+.team-roster-row b{font-size:10px}
+.team-roster-row small{margin-top:4px;color:#8993a1;font-size:8px}
+.team-directory{display:grid;gap:8px}
+.team-directory-row{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #2b303a;border-radius:12px;background:#151820}
+.team-directory-row>div:nth-child(2){flex:1;min-width:0}
+.team-directory-row b,.team-directory-row small{display:block}
+.team-directory-row b{font-size:11px}
+.team-directory-row small{margin-top:4px;color:#8993a1;font-size:8px;line-height:1.5}
+@media(max-width:560px){.team-identity{flex-wrap:wrap}.team-identity>.tag-orange{margin-left:60px}}
