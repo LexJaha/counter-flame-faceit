@@ -174,21 +174,26 @@ export default function Home() {
   }, [user]);
 
   const loadAdminPlayers = useCallback(async () => {
-    if (!supabase || !adminUnlocked) return;
-    const { data, error } = await supabase.from("profiles").select("id,username,elo,wins,losses,matches_played,kills,deaths").order("elo", { ascending: false }).limit(250);
-    if (error) { setNotice(error.message); return; }
-    const rows = (data || []) as Profile[];
-    setAdminPlayers(rows);
-    setAdminTargetId(currentId => {
-      const selected = rows.find(row => row.id === currentId) || rows.find(row => row.id === user?.id) || rows[0];
-      if (selected) {
-        setAdminElo(String(selected.elo));
-        setAdminKills(String(selected.kills ?? 0));
-        setAdminDeaths(String(selected.deaths ?? 0));
-        return selected.id;
-      }
-      return currentId;
-    });
+    if (!adminUnlocked) return;
+    try {
+      const response = await fetch("/api/admin-players", { cache: "no-store", credentials: "same-origin" });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Oyuncu listesi yüklenemedi.");
+      const rows = (payload.players || []) as Profile[];
+      setAdminPlayers(rows);
+      setAdminTargetId(currentId => {
+        const selected = rows.find(row => row.id === currentId) || rows.find(row => row.id === user?.id) || rows[0];
+        if (selected) {
+          setAdminElo(String(selected.elo));
+          setAdminKills(String(selected.kills ?? 0));
+          setAdminDeaths(String(selected.deaths ?? 0));
+          return selected.id;
+        }
+        return "";
+      });
+    } catch (error: any) {
+      setNotice(error.message || "Oyuncu listesi yüklenemedi.");
+    }
   }, [adminUnlocked, user?.id]);
 
   useEffect(() => {
@@ -726,23 +731,31 @@ export default function Home() {
   }
 
   async function saveAdminStats() {
-    if (!supabase || !isModerator || !adminTargetId) return;
+    if (!adminUnlocked || !adminTargetId) return;
     const eloValue = Number(adminElo), killsValue = Number(adminKills), deathsValue = Number(adminDeaths);
     if (![eloValue,killsValue,deathsValue].every(Number.isInteger) || eloValue < 0 || eloValue > 10000 || killsValue < 0 || deathsValue < 0 || killsValue > 999999 || deathsValue > 999999) {
       setNotice("ELO 0–10000, K/D ise 0–999999 aralığında tam sayı olmalı."); return;
     }
     setBusy(true);
-    const { data, error } = await supabase.rpc("cf_admin_update_player_stats", {
-      p_user_id: adminTargetId, p_elo: eloValue, p_kills: killsValue, p_deaths: deathsValue
-    });
-    if (error) setNotice(error.message);
-    else {
-      setNotice("Oyuncu istatistikleri güncellendi.");
-      setAdminPlayers(old => old.map(row => row.id === adminTargetId ? { ...row, elo: data.elo, kills: data.kills, deaths: data.deaths } : row));
-      if (adminTargetId === user.id) await loadProfile(user.id);
+    try {
+      const response = await fetch("/api/admin-players", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: adminTargetId, elo: eloValue, kills: killsValue, deaths: deathsValue })
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "İstatistikler kaydedilemedi.");
+      const saved = payload.player as Profile;
+      setAdminPlayers(old => old.map(row => row.id === saved.id ? saved : row));
+      if (adminTargetId === user?.id) await loadProfile(user.id);
       await loadLeaderboard();
+      setNotice("Kaydedildi: ELO, Kill ve Death veritabanına yazıldı.");
+    } catch (error: any) {
+      setNotice(error.message || "İstatistikler kaydedilemedi.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   async function signOut() {
@@ -761,7 +774,7 @@ export default function Home() {
   return (
     <main className="cf-shell">
       <header className="topbar">
-        <a className="brand" href="#"><span className="brand-mark"><Flame size={22}/></span><span><b>COUNTERFLAME <em>FACEIT</em> <span className="brand-version">v1.0.0</span></b><small>COMPETITIVE COMMUNITY PLATFORM</small></span></a>
+        <a className="brand" href="#"><span className="brand-mark"><Flame size={22}/></span><span><b>COUNTERFLAME <em>FACEIT</em> <span className="brand-version">v1.0.1</span></b><small>COMPETITIVE COMMUNITY PLATFORM</small></span></a>
         <div className="top-actions">
           <select aria-label="Language" className="cf-language-select" value={language} onChange={e=>changeLanguage(e.target.value as "en"|"tr")}><option value="en">English</option><option value="tr">Türkçe</option></select>
           <span className="season-pill"><span/> SEASON 01 · BETA</span>
