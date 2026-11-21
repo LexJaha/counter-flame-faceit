@@ -737,6 +737,7 @@ export default function Home() {
               <div className="section-heading"><div><span className="eyebrow">COMPETITIVE QUEUE</span><h2>MATCHMAKING</h2><p>Modunu seç. Sistem gerçek oyuncuları otomatik eşleştirir; davet kodu gerekmez.</p></div><Swords className="heading-icon"/></div>
               <div className="matchmaking-grid">
                 <div className="panel-card"><div className="card-top"><span className="tag-orange">RANKED SEARCH</span><Zap size={19}/></div><h3>FIND A MATCH</h3><p className="muted">Gerçek oyuncular aynı mod ve yakın ELO aralığında otomatik eşleşir. Başlangıç modu 1v1.</p><label className="field-label">GAME MODE</label><div className="mode-grid">{modes.map(item=><button key={item} className={mode===item?"mode-option selected":"mode-option"} onClick={()=>setMode(item)}>{item}</button>)}</div><button className="btn-primary full" disabled={busy} onClick={joinQueue}>{queueState==="waiting"?"OYUNCU ARANIYOR…":"OTOMATİK EŞLEŞMEYİ BAŞLAT"} <ChevronRight size={16}/></button>{queueState==="waiting"&&<><div className="cf-search-loader" role="status" aria-live="polite"><div className="cf-loader-ring"><div className="cf-loader-core">CF</div></div><b>RAKİP ARANIYOR</b><span>Uygun oyuncu bulunduğunda otomatik eşleşeceksin.</span><i className="cf-loader-pulse"/></div><button className="btn-ghost full mt-2" onClick={leaveQueue}>ARAMAYI İPTAL ET</button></>}</div>
+              </div>
             </>}
 
             {view==="ai-analysis" && <div className="panel-card real-module ai-analysis-page">
