@@ -5,7 +5,7 @@ import type { FormEvent, ReactNode } from "react";
 import {
   Activity, Bell, CheckCircle2, ChevronRight, Clock, Copy, Flame, Gamepad2,
   LayoutDashboard, LogOut, Medal, MessageSquare, Plus, RefreshCw, Search,
-  Send, ShieldCheck, Swords, Trophy, UploadCloud, Users, X, Zap
+  Send, ShieldCheck, Swords, Trophy, UploadCloud, Users, X, Zap, MoreHorizontal
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -70,6 +70,7 @@ export default function Home() {
   const [tournamentScores, setTournamentScores] = useState<Record<string,{score1:string;score2:string}>>({});
   const [isModerator, setIsModerator] = useState(false);
   const [view, setView] = useState("overview");
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -659,6 +660,26 @@ export default function Home() {
         </div>
         <div className="sidebar-bottom"><span className="green-dot"/> COUNTERFLAME <b>V5000</b><small>BUILT FOR COMPETITIVE PLAY</small></div>
       </aside>
+
+      <nav className="mobile-dock" aria-label="Mobil ana menü">
+        {["overview","matchmaking","room","leaderboard","profile"].map(id => {
+          const item = navItems.find(entry => entry.id === id)!;
+          return <button key={id} className={view===id?"mobile-dock-item active":"mobile-dock-item"} onClick={()=>{setView(id);setMobileMoreOpen(false);}}>
+            <item.icon size={19}/><span>{id==="overview"?"Ana Sayfa":id==="matchmaking"?"Eşleş":id==="room"?"Oda":id==="leaderboard"?"Sıralama":"Profil"}</span>
+          </button>;
+        })}
+        <button className={mobileMoreOpen?"mobile-dock-item active":"mobile-dock-item"} onClick={()=>setMobileMoreOpen(open=>!open)} aria-expanded={mobileMoreOpen}>
+          <MoreHorizontal size={20}/><span>Daha Fazla</span>
+        </button>
+      </nav>
+      {mobileMoreOpen && <div className="mobile-more-panel">
+        <div className="mobile-more-heading"><b>Diğer bölümler</b><button onClick={()=>setMobileMoreOpen(false)} aria-label="Menüyü kapat"><X size={18}/></button></div>
+        {navItems.filter(item=>!["overview","matchmaking","room","leaderboard","profile"].includes(item.id)).map(item=>
+          <button key={item.id} className={view===item.id?"mobile-more-link active":"mobile-more-link"} onClick={()=>{setView(item.id);setMobileMoreOpen(false);}}>
+            <item.icon size={17}/><span>{item.label}</span><ChevronRight size={15}/>
+          </button>
+        )}
+      </div>}
 
       {notice && <div className="notice"><span>{notice}</span><button onClick={() => setNotice("")}><X size={16}/></button></div>}
 
