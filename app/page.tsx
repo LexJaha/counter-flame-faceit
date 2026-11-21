@@ -144,6 +144,8 @@ export default function Home() {
     const channel = supabase.channel("cf-room-" + activeMatch.id)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "cf_match_messages", filter: "match_id=eq." + activeMatch.id },
         (payload) => setMessages((old) => old.some((item) => item.id === (payload.new as any).id) ? old : [...old, payload.new as ChatMessage]))
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "cf_matches", filter: "id=eq." + activeMatch.id },
+        (payload) => setActiveMatch(payload.new as Match))
       .on("postgres_changes", { event: "*", schema: "public", table: "cf_match_players", filter: "match_id=eq." + activeMatch.id },
         () => { void loadMatch(activeMatch.id); })
       .subscribe();
