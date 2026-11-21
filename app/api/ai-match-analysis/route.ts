@@ -21,7 +21,7 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const image = body?.image;
-    if (typeof image !== "string" || !/^data:image\/(png|jpeg|webp);base64,/.test(image) || image.length > 14_000_000) {
+    if (typeof image !== "string" || !/^data:image\/(png|jpeg|webp);base64,/.test(image) || image.length > 4_000_000) {
       return NextResponse.json({ error: "Choose a PNG, JPG or WebP image up to 10 MB." }, { status: 400 });
     }
 
