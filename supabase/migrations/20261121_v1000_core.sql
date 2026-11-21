@@ -241,3 +241,11 @@ begin
       review_note=left(coalesce(p_note,''),500) where match_id=p_match;
   end if;
 end; $$;
+
+-- Queue updates drive live matchmaking status in the client.
+do $$
+begin
+  if not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='cf_match_queue') then
+    alter publication supabase_realtime add table public.cf_match_queue;
+  end if;
+end $$;
