@@ -26,17 +26,17 @@ type Tournament = { id: string; name: string; description: string; mode: string;
 const modes = ["1v1", "2v2", "3v3", "4v4", "5v5"];
 const maps = ["Random", "Harbor", "Factory", "Outpost", "District"];
 const navItems = [
-  { id: "overview", label: "Genel Bakış", icon: LayoutDashboard, group: "ANA MENÜ" },
-  { id: "matchmaking", label: "Eşleştirme", icon: Swords, group: "OYNA" },
-  { id: "room", label: "Match Room", icon: MessageSquare, group: "OYNA" },
-  { id: "leaderboard", label: "Sıralama", icon: Trophy, group: "REKABET" },
-  { id: "teams", label: "Takımlar", icon: Users, group: "REKABET" },
-  { id: "tournaments", label: "Turnuvalar", icon: Medal, group: "REKABET" },
-  { id: "messages", label: "Mesajlar", icon: Send, group: "SOSYAL" },
-  { id: "notifications", label: "Bildirimler", icon: Bell, group: "SOSYAL" },
-  { id: "ai-analysis", label: "AI Maç Analizi", icon: BrainCircuit, group: "ARAÇLAR" },
-  { id: "profile", label: "Oyuncu Profili", icon: Activity, group: "HESAP" },
-  { id: "settings", label: "Ayarlar", icon: ShieldCheck, group: "HESAP" },
+  { id: "overview", label: "Overview", icon: LayoutDashboard, group: "MAIN MENU" },
+  { id: "matchmaking", label: "Matchmaking", icon: Swords, group: "PLAY" },
+  { id: "room", label: "Match Room", icon: MessageSquare, group: "PLAY" },
+  { id: "leaderboard", label: "Leaderboard", icon: Trophy, group: "COMPETE" },
+  { id: "teams", label: "Teams", icon: Users, group: "COMPETE" },
+  { id: "tournaments", label: "Tournaments", icon: Medal, group: "COMPETE" },
+  { id: "messages", label: "Messages", icon: Send, group: "SOCIAL" },
+  { id: "notifications", label: "Notifications", icon: Bell, group: "SOCIAL" },
+  { id: "ai-analysis", label: "AI Match Analysis", icon: BrainCircuit, group: "TOOLS" },
+  { id: "profile", label: "Player Profile", icon: Activity, group: "ACCOUNT" },
+  { id: "settings", label: "Settings", icon: ShieldCheck, group: "ACCOUNT" },
 ];
 
 export default function Home() {
@@ -87,6 +87,7 @@ export default function Home() {
   const [adminLoginBusy, setAdminLoginBusy] = useState(false);
   const [adminUnlocked, setAdminUnlocked] = useState(false);
   const tx = (en: string, tr: string) => language === "tr" ? tr : en;
+  const isDev = (name?: string | null) => (name || "").trim().toLowerCase() === "lexf19";
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -213,7 +214,7 @@ export default function Home() {
   const loadLeaderboard = useCallback(async () => {
     if (!supabase) return;
     const { data, error } = await supabase.from("profiles")
-      .select("id,username,elo,wins,losses,matches_played")
+      .select("id,username,elo,wins,losses,matches_played,avatar_url")
       .order("elo", { ascending: false }).limit(20);
     if (!error) setLeaderboard((data || []) as Profile[]);
   }, []);
@@ -826,7 +827,7 @@ export default function Home() {
         <div className="top-actions">
           <select aria-label="Language" className="cf-language-select" value={language} onChange={e=>changeLanguage(e.target.value as "en"|"tr")}><option value="en">English</option><option value="tr">Türkçe</option></select>
           <span className="season-pill"><span/> SEASON 01 · BETA</span>
-          {user ? <><span className="user-chip"><span className="avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : (profile?.username || user.email || "P").slice(0,1).toUpperCase()}</span><b>{profile?.username || user.email}</b></span><button className="icon-btn" onClick={signOut} title="Sign out"><LogOut size={17}/></button></> : <span className="online-pill">SYSTEM ONLINE</span>}
+          {user ? <><span className="user-chip"><span className="avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : (profile?.username || user.email || "P").slice(0,1).toUpperCase()}</span><b>{profile?.username || user.email}{isDev(profile?.username) && <span className="dev-badge">DEV</span>}</b></span><button className="icon-btn" onClick={signOut} title="Sign out"><LogOut size={17}/></button></> : <span className="online-pill">SYSTEM ONLINE</span>}
         </div>
       </header>
 
@@ -838,17 +839,17 @@ export default function Home() {
         </div>
         <div className="menu-caption">NAVIGATION</div>
         {[
-          {name:"OVERVIEW", title:"GENEL BAKIŞ", hint:"Ana kontrol merkezi"},
-          {name:"PLAY", title:"OYUN", hint:"Eşleş ve odaya katıl"},
-          {name:"COMPETE", title:"REKABET", hint:"Sıralama ve organizasyon"},
-          {name:"COMMUNITY", title:"TOPLULUK", hint:"Sosyal alanlar"},
-          {name:"ACCOUNT", title:"OYUNCU", hint:"Profil ve tercihler"}
+          {name:"OVERVIEW", title:"OVERVIEW", hint:"Main control center"},
+          {name:"PLAY", title:"PLAY", hint:"Find a match or join a room"},
+          {name:"COMPETE", title:"COMPETE", hint:"Rankings and events"},
+          {name:"COMMUNITY", title:"COMMUNITY", hint:"Social spaces"},
+          {name:"ACCOUNT", title:"ACCOUNT", hint:"Profile and preferences"}
         ].map(section => {
           const groupItems = navItems.filter(item => (
-            section.name==="OVERVIEW" ? item.group==="ANA MENÜ" :
-            section.name==="PLAY" ? item.group==="OYNA" :
-            section.name==="COMPETE" ? item.group==="REKABET" :
-            section.name==="COMMUNITY" ? item.group==="SOSYAL" : item.group==="HESAP"
+            section.name==="OVERVIEW" ? item.group==="MAIN MENU" :
+            section.name==="PLAY" ? item.group==="PLAY" :
+            section.name==="COMPETE" ? item.group==="COMPETE" :
+            section.name==="COMMUNITY" ? item.group==="SOCIAL" : item.group==="ACCOUNT"
           ));
           return <div className="menu-section" key={section.name}>
             <div className="menu-section-heading"><span>{section.title}</span><small>{String(groupItems.length).padStart(2,"0")}</small></div>
@@ -864,7 +865,7 @@ export default function Home() {
         <div className="menu-spacer"/>
         <div className="global-player">
           <div className="player-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : (profile?.username||user?.email||"P").slice(0,1).toUpperCase()}</div>
-          <div className="player-meta"><b>{profile?.username || (user ? "Oyuncu" : "Misafir")}</b><span className="rank-label">{user ? `RATING · ${profile?.elo ?? 1000} ELO` : "GİRİŞ YAPILMADI"}</span></div>
+          <div className="player-meta"><b>{profile?.username || (user ? "Player" : "Guest")}{isDev(profile?.username) && <span className="dev-badge">DEV</span>}</b><span className="rank-label">{user ? `RATING · ${profile?.elo ?? 1000} ELO` : "GİRİŞ YAPILMADI"}</span></div>
           <span className="player-status"><i/></span>
         </div>
         <div className="sidebar-bottom"><span className="green-dot"/> COUNTERFLAME <b>V5000</b><small>BUILT FOR COMPETITIVE PLAY</small></div>
@@ -979,8 +980,8 @@ export default function Home() {
             </div>}
 
             {view==="profile" && <div className="panel-card real-module">
-              <div className="section-heading"><div><span className="eyebrow">PLAYER IDENTITY</span><h2>OYUNCU PROFİLİ</h2><p>Bilgilerin doğrudan CounterFlame veritabanına kaydedilir.</p></div><Activity className="heading-icon"/></div>
-              <div className="profile-summary"><div className="profile-large-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt="Profil fotoğrafı" /> : (profile?.username||"P").slice(0,1).toUpperCase()}</div><div><b>{profile?.username || "Oyuncu"}</b><span>{profile?.elo ?? 1000} ELO · {profile?.matches_played ?? 0} MATCHES</span></div></div>
+              <div className="section-heading"><div><span className="eyebrow">PLAYER IDENTITY</span><h2>{tx("PLAYER PROFILE","OYUNCU PROFİLİ")}</h2><p>{tx("Your details are saved directly to the CounterFlame database.","Bilgilerin doğrudan CounterFlame veritabanına kaydedilir.")}</p></div><Activity className="heading-icon"/></div>
+              <div className="profile-summary"><div className="profile-large-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt="Profil fotoğrafı" /> : (profile?.username||"P").slice(0,1).toUpperCase()}</div><div><b>{profile?.username || "Player"}{isDev(profile?.username) && <span className="dev-badge">DEV</span>}</b><span>{profile?.elo ?? 1000} ELO · {profile?.matches_played ?? 0} MATCHES</span></div></div>
                <label className="field-label" htmlFor="profile-avatar-file">PROFILE PHOTO · JPG / PNG / WEBP / GIF · MAX 2 MB</label>
                <div className="avatar-upload-row"><input id="profile-avatar-file" className="avatar-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={uploadAvatar} disabled={!user || avatarBusy}/><label className="btn-ghost compact" htmlFor="profile-avatar-file">{avatarBusy ? "UPLOADING..." : profile?.avatar_url ? "CHANGE PHOTO" : "ADD PHOTO"} <UploadCloud size={15}/></label><span className="muted small">{profile?.avatar_url ? "Fotoğrafın profilinde ve sıralamada görünür." : "Bir fotoğraf seçerek profilini kişiselleştir."}</span></div>
               <label className="field-label">PLAYER NAME</label><input className="cf-input" value={profileUsername} maxLength={20} onChange={e=>setProfileUsername(e.target.value)} />
@@ -990,7 +991,7 @@ export default function Home() {
             </div>}
 
             {view==="settings" && <div className="panel-card real-module">
-              <div className="section-heading"><div><span className="eyebrow">ACCOUNT SECURITY</span><h2>HESAP AYARLARI</h2><p>Oturum ve hesap güvenliği.</p></div><ShieldCheck className="heading-icon"/></div>
+              <div className="section-heading"><div><span className="eyebrow">ACCOUNT SECURITY</span><h2>{tx("ACCOUNT SETTINGS","HESAP AYARLARI")}</h2><p>{tx("Session and account security.","Oturum ve hesap güvenliği.")}</p></div><ShieldCheck className="heading-icon"/></div>
               <div className="settings-row"><div><b>Signed-in account</b><small>{user.email}</small></div><span className="tag-muted">AUTHENTICATED</span></div>
               <div className="settings-row"><div><b>Database protection</b><small>Supabase Row Level Security is active on player and match data.</small></div><span className="tag-orange">RLS ON</span></div>
               <div className="settings-row"><div><b>Change password</b><small>Send a secure password reset link to your account email.</small></div><button className="btn-ghost compact" onClick={async()=>{const {error}=await supabase!.auth.resetPasswordForEmail(user.email!);setNotice(error?error.message:"Password reset email requested.");}}>SEND RESET</button></div>
@@ -1025,7 +1026,7 @@ export default function Home() {
               </>}
             </div>}
             {view==="notifications" && <div className="panel-card real-module">
-              <div className="section-heading"><div><span className="eyebrow">ACCOUNT ACTIVITY</span><h2>BİLDİRİMLER</h2><p>Mesajlar, takım hareketleri ve maç kararları.</p></div><Bell className="heading-icon"/></div>
+              <div className="section-heading"><div><span className="eyebrow">ACCOUNT ACTIVITY</span><h2>{tx("NOTIFICATIONS","BİLDİRİMLER")}</h2><p>{tx("Messages, team activity and match decisions.","Mesajlar, takım hareketleri ve maç kararları.")}</p></div><Bell className="heading-icon"/></div>
               <div className="notification-toolbar"><span>{appNotifications.filter(item=>!item.read_at).length} UNREAD</span><button className="btn-ghost compact" disabled={!appNotifications.some(item=>!item.read_at)} onClick={markNotificationsRead}>MARK ALL READ <CheckCircle2 size={14}/></button></div>
               {appNotifications.length===0?<div className="empty-list"><Bell size={22}/><b>No notifications yet</b><span>New messages and match updates will appear here.</span></div>:<div className="notification-list">{appNotifications.map(item=><button key={item.id} className={item.read_at?"notification-row":"notification-row unread"} onClick={()=>{setView(item.link==="teams"?"teams":item.link==="messages"?"messages":"room");if(!item.read_at){void markNotificationsRead();}}}><span className="notification-icon">{item.kind==="direct_message"?<MessageSquare size={16}/>:item.kind==="team_join"?<Users size={16}/>:<Trophy size={16}/>}</span><span className="notification-copy"><b>{item.title}</b><small>{item.body}</small><time>{new Date(item.created_at).toLocaleString("tr-TR")}</time></span>{!item.read_at&&<i className="notification-unread-dot"/>}</button>)}</div>}
             </div>}
@@ -1042,7 +1043,7 @@ export default function Home() {
             </div>}
 
             {view==="tournaments" && <div className="panel-card real-module">
-              <div className="section-heading"><div><span className="eyebrow">COMPETITIVE EVENTS</span><h2>TURNUVALAR</h2><p>Gerçek kayıtlar, oyuncu kontenjanı ve ilk tur eşleşmeleri.</p></div><Medal className="heading-icon"/></div>
+              <div className="section-heading"><div><span className="eyebrow">COMPETITIVE EVENTS</span><h2>{tx("TOURNAMENTS","TURNUVALAR")}</h2><p>{tx("Live registrations, player slots and first-round fixtures.","Gerçek kayıtlar, oyuncu kontenjanı ve ilk tur eşleşmeleri.")}</p></div><Medal className="heading-icon"/></div>
               <div className="team-create-form">
                 <span className="eyebrow">YENİ TURNUVA OLUŞTUR</span>
                 <input className="cf-input" value={tournamentName} onChange={e=>setTournamentName(e.target.value)} maxLength={48} placeholder="Turnuva adı (3–48 karakter)"/>
@@ -1091,8 +1092,10 @@ function MatchList({matches,onJoin}:{matches:Match[];onJoin:(code:string)=>void}
   return <div className="match-list">{matches.map(match=><div className="match-row" key={match.id}><div className="match-mode-icon"><Swords size={18}/></div><div className="match-info"><b>{match.mode} · {match.map}</b><span><Clock size={12}/> {new Date(match.created_at).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})} · OPEN ROOM</span></div><div className="match-code"><small>MATCH CODE</small><b>{match.code}</b></div><button className="btn-ghost compact" onClick={()=>onJoin(match.code)}>USE CODE <ChevronRight size={14}/></button></div>)}</div>;
 }
 
+function isDevPlayer(name?: string | null) { return (name || "").trim().toLowerCase() === "lexf19"; }
+
 function Leaderboard({rows}:{rows:Profile[]}) {
-  return <div className="leaderboard panel-card"><div className="card-top"><div><span className="eyebrow">TOP PLAYERS</span><h3>RANKINGS</h3></div><Medal className="heading-icon"/></div>{rows.length===0?<div className="empty-list"><Trophy size={24}/><b>Rankings will appear here</b><span>Complete verified matches to earn ELO.</span></div>:rows.map((row,index)=><div className="leader-row" key={row.id}><div className={"rank-number "+(index===0?"gold":"")}>{String(index+1).padStart(2,"0")}</div><div className="leader-avatar">{row.avatar_url ? <img src={row.avatar_url} alt="" /> : row.username.slice(0,1).toUpperCase()}</div><div className="leader-name"><b>{row.username}</b><span>{row.matches_played} MATCHES · {row.wins} WINS</span></div><div className="leader-elo"><b>{row.elo.toLocaleString()}</b><small>ELO</small></div></div>)}</div>;
+  return <div className="leaderboard panel-card"><div className="card-top"><div><span className="eyebrow">TOP PLAYERS</span><h3>RANKINGS</h3></div><Medal className="heading-icon"/></div>{rows.length===0?<div className="empty-list"><Trophy size={24}/><b>Rankings will appear here</b><span>Complete verified matches to earn ELO.</span></div>:rows.map((row,index)=><div className="leader-row" key={row.id}><div className={"rank-number "+(index===0?"gold":"")}>{String(index+1).padStart(2,"0")}</div><div className="leader-avatar">{row.avatar_url ? <img src={row.avatar_url} alt="" /> : row.username.slice(0,1).toUpperCase()}</div><div className="leader-name"><b>{row.username}{isDevPlayer(row.username) && <span className="dev-badge">DEV</span>}</b><span>{row.matches_played} MATCHES · {row.wins} WINS</span></div><div className="leader-elo"><b>{row.elo.toLocaleString()}</b><small>ELO</small></div></div>)}</div>;
 }
 
 function MatchRoom({match,players,messages,userId,draft,setDraft,onSend}:{
