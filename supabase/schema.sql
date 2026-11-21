@@ -14,6 +14,39 @@ create policy "host creates match" on public.matches for insert to authenticated
 create policy "host updates match" on public.matches for update to authenticated using(host_id=auth.uid()) with check(host_id=auth.uid());
 create policy "players readable" on public.match_players for select to authenticated using(true);
 create policy "player joins as self" on public.match_players for insert to authenticated with check(user_id=auth.uid());
+-- Enforce lobby capacity on the database, not only in the browser.
+create or replace function public.enforce_lobby_capacity()
+returns trigger language plpgsql security definer set search_path=public as $
+declare
+  lobby_mode text;
+  lobby_status text;
+  player_count integer;
+  max_players integer;
+begin
+  select mode,status into lobby_mode,lobby_status from public.matches where id=new.match_id for update;
+  if lobby_status <> 'open' then raise exception 'This lobby is no longer open'; end if;
+  select count(*) into player_count from public.match_players where match_id=new.match_id;
+  max_players := case when lobby_mode='1v1' then 2 else 10 end;
+  if player_count >= max_players then raise exception 'This lobby is full'; end if;
+  return new;
+end;
+$;
+drop trigger if exists check_lobby_capacity on public.match_players;
+create trigger check_lobby_capacity before insert on public.match_players for each row execute procedure public.enforce_lobby_capacity();
+create or replace function public.mark_lobby_full()
+returns trigger language plpgsql security definer set search_path=public as $
+declare
+  player_count integer;
+  max_players integer;
+begin
+  select count(*) into player_count from public.match_players where match_id=new.match_id;
+  select case when mode='1v1' then 2 else 10 end into max_players from public.matches where id=new.match_id;
+  if player_count >= max_players then update public.matches set status='live' where id=new.match_id and status='open'; end if;
+  return new;
+end;
+$;
+drop trigger if exists mark_lobby_full_after_join on public.match_players;
+create trigger mark_lobby_full_after_join after insert on public.match_players for each row execute procedure public.mark_lobby_full();
 create policy "player leaves self" on public.match_players for delete to authenticated using(user_id=auth.uid());
 create policy "chat readable to players" on public.match_messages for select to authenticated using(public.is_match_player(match_id));
 create policy "players send chat" on public.match_messages for insert to authenticated with check(sender_id=auth.uid() and public.is_match_player(match_id));
@@ -22,4 +55,12 @@ create policy "players submit evidence" on public.match_evidence for insert to a
 create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path=public as $$ begin insert into public.profiles(id,username) values(new.id,coalesce(nullif(new.raw_user_meta_data->>'username',''),split_part(new.email,'@',1))) on conflict(id) do nothing; return new; end; $$;
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created after insert on auth.users for each row execute procedure public.handle_new_user();
-alter publication supabase_realtime add table public.match_messages;
+do $
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname='supabase_realtime' and schemaname='public' and tablename='match_messages'
+  ) then
+    alter publication supabase_realtime add table public.match_messages;
+  end if;
+end $;
