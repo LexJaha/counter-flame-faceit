@@ -165,7 +165,17 @@ export default function Home() {
     })));
   }, [user]);
 
-  const loadAdminPlayers = useCallback(async () => {\n    if (!supabase || !isModerator) return;\n    const { data, error } = await supabase.from("profiles").select("id,username,elo,wins,losses,matches_played,kills,deaths").order("elo", { ascending: false }).limit(250);\n    if (error) { setNotice(error.message); return; }\n    const rows = (data || []) as Profile[];\n    setAdminPlayers(rows);\n    const selected = rows.find(row => row.id === adminTargetId) || rows.find(row => row.id === user?.id) || rows[0];\n    if (selected) { setAdminTargetId(selected.id); setAdminElo(String(selected.elo)); setAdminKills(String(selected.kills ?? 0)); setAdminDeaths(String(selected.deaths ?? 0)); }\n  }, [isModerator, adminTargetId, user?.id]);\n\n  const loadLeaderboard = useCallback(async () => {
+  const loadAdminPlayers = useCallback(async () => {
+    if (!supabase || !isModerator) return;
+    const { data, error } = await supabase.from("profiles").select("id,username,elo,wins,losses,matches_played,kills,deaths").order("elo", { ascending: false }).limit(250);
+    if (error) { setNotice(error.message); return; }
+    const rows = (data || []) as Profile[];
+    setAdminPlayers(rows);
+    const selected = rows.find(row => row.id === adminTargetId) || rows.find(row => row.id === user?.id) || rows[0];
+    if (selected) { setAdminTargetId(selected.id); setAdminElo(String(selected.elo)); setAdminKills(String(selected.kills ?? 0)); setAdminDeaths(String(selected.deaths ?? 0)); }
+  }, [isModerator, adminTargetId, user?.id]);
+
+  const loadLeaderboard = useCallback(async () => {
     if (!supabase) return;
     const { data, error } = await supabase.from("profiles")
       .select("id,username,elo,wins,losses,matches_played")
