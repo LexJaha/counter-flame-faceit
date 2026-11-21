@@ -249,3 +249,78 @@ begin
     alter publication supabase_realtime add table public.cf_match_queue;
   end if;
 end $$;
+
+-- Ensure fully populated rooms transition from ready to live.
+create or replace function public.cf_join_match_by_code(p_code text)
+returns uuid language plpgsql security definer set search_path=public,auth as $$
+declare
+  v_me uuid:=auth.uid(); v_match public.cf_matches%rowtype; v_capacity integer;
+  v_team1 integer; v_team2 integer; v_team smallint; v_count integer;
+begin
+  if v_me is null then raise exception 'Sign in first.'; end if;
+  if p_code is null or p_code !~ '^[0-9]{6}$' then raise exception 'Enter a valid six-digit code.'; end if;
+  select * into v_match from public.cf_matches where code=p_code for update;
+  if not found or v_match.status<>'ready' then raise exception 'Lobby not found or no longer open.'; end if;
+  if exists(select 1 from public.cf_match_players where match_id=v_match.id and user_id=v_me) then return v_match.id; end if;
+  v_capacity:=case v_match.mode when '1v1' then 2 when '2v2' then 4 when '3v3' then 6 when '4v4' then 8 else 10 end;
+  select count(*) into v_count from public.cf_match_players where match_id=v_match.id;
+  if v_count>=v_capacity then raise exception 'Lobby is full.'; end if;
+  select count(*) filter(where team_no=1),count(*) filter(where team_no=2)
+    into v_team1,v_team2 from public.cf_match_players where match_id=v_match.id;
+  v_team:=case when v_team1<=v_team2 then 1 else 2 end;
+  insert into public.cf_match_players(match_id,user_id,team_no) values(v_match.id,v_me,v_team);
+  select count(*) into v_count from public.cf_match_players where match_id=v_match.id;
+  if v_count>=v_capacity then update public.cf_matches set status='live' where id=v_match.id; end if;
+  return v_match.id;
+end; $$;
+
+create or replace function public.cf_join_matchmaking(p_mode text)
+returns jsonb language plpgsql security definer set search_path=public,auth as $$
+declare
+  v_me uuid:=auth.uid(); v_size integer; v_elo integer; v_match uuid; v_count integer;
+  v_player record; v_i integer:=0; v_wait_seconds integer:=0; v_gap integer:=200;
+begin
+  if v_me is null then raise exception 'Sign in first.'; end if;
+  if p_mode not in('1v1','2v2','3v3','4v4','5v5') then raise exception 'Unsupported game mode.'; end if;
+  v_size:=case p_mode when '1v1' then 2 when '2v2' then 4 when '3v3' then 6 when '4v4' then 8 else 10 end;
+  perform pg_advisory_xact_lock(hashtext('cf_matchmaking:'||p_mode)::bigint);
+  select match_id into v_match from public.cf_match_queue where user_id=v_me;
+  if v_match is not null then
+    return jsonb_build_object('status','matched','mode',p_mode,'match_id',v_match,'players_found',v_size,'players_needed',v_size,'elo_range',1000);
+  end if;
+  delete from public.cf_match_queue where match_id is null and joined_at<now()-interval '30 minutes';
+  select coalesce(elo,1000) into v_elo from public.profiles where id=v_me;
+  if v_elo is null then
+    insert into public.profiles(id,username,elo,wins,losses)
+    values(v_me,coalesce((select raw_user_meta_data->>'username' from auth.users where id=v_me),'Player'),1000,0,0)
+    on conflict(id) do nothing;
+    v_elo:=1000;
+  end if;
+  insert into public.cf_match_queue(user_id,mode,elo,joined_at,match_id)
+  values(v_me,p_mode,v_elo,now(),null)
+  on conflict(user_id) do update set mode=excluded.mode,elo=excluded.elo,
+    joined_at=case when public.cf_match_queue.mode=excluded.mode and public.cf_match_queue.match_id is null
+      then public.cf_match_queue.joined_at else now() end,match_id=null;
+  select greatest(0,extract(epoch from now()-joined_at)::integer) into v_wait_seconds
+  from public.cf_match_queue where user_id=v_me;
+  v_gap:=least(1000,200+(floor(v_wait_seconds/30.0)::integer*100));
+  select count(*) into v_count from (
+    select user_id from public.cf_match_queue where mode=p_mode and match_id is null
+      and abs(elo-v_elo)<=v_gap order by joined_at,user_id limit v_size
+  ) waiting;
+  if v_count<v_size then
+    return jsonb_build_object('status','waiting','mode',p_mode,'players_found',v_count,'players_needed',v_size,'elo_range',v_gap);
+  end if;
+  insert into public.cf_matches(mode,status) values(p_mode,'ready') returning id into v_match;
+  for v_player in
+    select user_id from public.cf_match_queue where mode=p_mode and match_id is null
+      and abs(elo-v_elo)<=v_gap order by elo desc,joined_at,user_id limit v_size for update
+  loop
+    v_i:=v_i+1;
+    update public.cf_match_queue set match_id=v_match where user_id=v_player.user_id;
+    insert into public.cf_match_players(match_id,user_id,team_no)
+    values(v_match,v_player.user_id,case when mod(v_i-1,4) in(0,3) then 1 else 2 end);
+  end loop;
+  update public.cf_matches set status='live' where id=v_match;
+  return jsonb_build_object('status','matched','mode',p_mode,'match_id',v_match,'players_found',v_size,'players_needed',v_size,'elo_range',v_gap);
+end; $$;
