@@ -362,13 +362,34 @@ export default function Home() {
         <div className="workspace">
           <section className="main-panel">
             {view==="overview" && <>
-              <div className="section-heading"><div><span className="eyebrow">COMMAND CENTER</span><h2>WELCOME BACK, {(profile?.username||"PLAYER").toUpperCase()}</h2><p>Your competitive dashboard is ready.</p></div><button className="btn-ghost compact" onClick={()=>{void loadMatches();void loadLeaderboard();}}><RefreshCw size={15}/> REFRESH</button></div>
-              <div className="overview-grid">
-                <div className="panel-card feature-card"><div className="card-top"><span className="tag-orange">QUICK PLAY</span><Zap size={20}/></div><h3>FIND YOUR<br/><em>NEXT MATCH.</em></h3><p>Jump into the queue and let the matchmaking system find a balanced lobby.</p><button className="btn-primary" onClick={()=>setView("matchmaking")}>OPEN MATCHMAKING <ChevronRight size={16}/></button></div>
-                <div className="panel-card"><div className="card-top"><span className="tag-muted">YOUR PERFORMANCE</span><Activity size={19}/></div><div className="performance-number">{profile?.elo ?? 1000}<small> ELO</small></div><div className="progress-track"><span style={{width:Math.min(100,Math.max(4,((profile?.elo??1000)/3000)*100))+"%"}}/></div><div className="performance-foot"><span>{profile?.matches_played??0} matches</span><span>{winRate}% win rate</span></div><div className="mini-divider"/><div className="small-stat-row"><span>Victories</span><b>{profile?.wins??0}</b></div><div className="small-stat-row"><span>Defeats</span><b>{profile?.losses??0}</b></div></div>
+              <div className="dashboard-topline">
+                <div><span className="eyebrow">COUNTERFLAME ARENA / SEASON 01</span><h2>WELCOME BACK, {(profile?.username||"PLAYER").toUpperCase()}</h2><p>Queue up. Play smart. Climb the ladder.</p></div>
+                <button className="btn-ghost compact" onClick={()=>{void loadMatches();void loadLeaderboard();}}><RefreshCw size={15}/> REFRESH DATA</button>
               </div>
-              <div className="section-heading sub-heading"><div><span className="eyebrow">OPEN ROOMS</span><h2>AVAILABLE MATCHES</h2></div><button className="text-action" onClick={()=>setView("matchmaking")}>SEE ALL <ChevronRight size={15}/></button></div>
-              <MatchList matches={matches} onJoin={(code)=>{setJoinCode(code);setView("matchmaking");}}/>
+              <section className="dashboard-hero">
+                <div className="dashboard-hero-copy">
+                  <span className="dashboard-live"><i/> COMPETITIVE QUEUE IS OPEN</span>
+                  <h3>YOUR NEXT<br/><em>WIN STARTS HERE.</em></h3>
+                  <p>Find a balanced match, build your record and earn your place on the leaderboard.</p>
+                  <div className="dashboard-hero-actions"><button className="btn-primary" onClick={()=>setView("matchmaking")}><Swords size={16}/> FIND A MATCH <ChevronRight size={16}/></button><button className="btn-ghost" onClick={()=>setView("room")}><Users size={16}/> MATCH ROOM</button></div>
+                </div>
+                <div className="dashboard-hero-art" aria-hidden="true"><div className="hero-ring hero-ring-one"/><div className="hero-ring hero-ring-two"/><div className="hero-flame"><Flame size={76}/></div><span className="hero-art-label">CF / 001</span></div>
+                <div className="dashboard-hero-foot"><span>RANKED MATCHMAKING</span><span>PRIVATE LOBBIES</span><span>VERIFIED RESULTS</span></div>
+              </section>
+              <div className="dashboard-stats">
+                <div className="dashboard-stat"><span className="dashboard-stat-icon"><Trophy size={17}/></span><small>YOUR RATING</small><b>{(profile?.elo??1000).toLocaleString("tr-TR")} <i>ELO</i></b><span className="stat-note">Current player rating</span></div>
+                <div className="dashboard-stat"><span className="dashboard-stat-icon"><Gamepad2 size={17}/></span><small>MATCHES PLAYED</small><b>{profile?.matches_played??0}</b><span className="stat-note">Total recorded matches</span></div>
+                <div className="dashboard-stat"><span className="dashboard-stat-icon"><CheckCircle2 size={17}/></span><small>VICTORIES</small><b>{profile?.wins??0}</b><span className="stat-note">Approved match wins</span></div>
+                <div className="dashboard-stat"><span className="dashboard-stat-icon"><Activity size={17}/></span><small>WIN RATE</small><b>{winRate}<i>%</i></b><span className="stat-note">Based on your record</span></div>
+              </div>
+              <div className="dashboard-columns">
+                <section className="dashboard-section"><div className="section-heading sub-heading"><div><span className="eyebrow">FIND YOUR GAME</span><h2>PLAY YOUR WAY</h2></div></div>
+                  <div className="dashboard-action-card" onClick={()=>setView("matchmaking")} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setView("matchmaking");}}}><span className="action-card-icon"><Zap size={19}/></span><div><b>Ranked matchmaking</b><small>Find players and enter the queue</small></div><ChevronRight size={17}/></div>
+                  <div className="dashboard-action-card" onClick={()=>setView("matchmaking")} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setView("matchmaking");}}}><span className="action-card-icon"><Users size={19}/></span><div><b>Create private lobby</b><small>Invite friends with a six-digit code</small></div><ChevronRight size={17}/></div>
+                  <div className="dashboard-action-card" onClick={()=>setView("leaderboard")} role="button" tabIndex={0} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setView("leaderboard");}}}><span className="action-card-icon"><Trophy size={19}/></span><div><b>View leaderboard</b><small>See the current top competitors</small></div><ChevronRight size={17}/></div>
+                </section>
+                <section className="dashboard-section"><div className="section-heading sub-heading"><div><span className="eyebrow">LIVE LOBBIES</span><h2>OPEN MATCHES</h2></div><button className="text-action" onClick={()=>setView("matchmaking")}>VIEW ALL <ChevronRight size={14}/></button></div><MatchList matches={matches.slice(0,4)} onJoin={(code)=>{setJoinCode(code);setView("matchmaking");}}/></section>
+              </div>
               <Leaderboard rows={leaderboard.slice(0,5)}/>
             </>}
 
