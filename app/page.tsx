@@ -123,6 +123,23 @@ export default function Home() {
   }, [user, loadProfile, loadMatches, loadLeaderboard]);
 
   useEffect(() => {
+    if (!user || !supabase) return;
+    const channel = supabase.channel("cf-queue-" + user.id)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "cf_match_queue", filter: "user_id=eq." + user.id },
+        (payload) => {
+          const matchId = (payload.new as any).match_id as string | null;
+          if (matchId) {
+            setQueueState("");
+            setNotice("Match found. Your room is ready.");
+            setView("room");
+            void loadMatch(matchId);
+          }
+        })
+      .subscribe();
+    return () => { void supabase?.removeChannel(channel); };
+  }, [user?.id, loadMatch]);
+
+  useEffect(() => {
     if (!activeMatch || !supabase) return;
     const channel = supabase.channel("cf-room-" + activeMatch.id)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "cf_match_messages", filter: "match_id=eq." + activeMatch.id },
