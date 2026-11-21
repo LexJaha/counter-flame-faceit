@@ -77,6 +77,10 @@ export default function Home() {
   const [adminKills, setAdminKills] = useState("0");
   const [adminDeaths, setAdminDeaths] = useState("0");
   const [view, setView] = useState("overview");
+  const [language, setLanguage] = useState<"en"|"tr">("en");
+  const [aiResult, setAiResult] = useState<any>(null);
+  const [aiBusy, setAiBusy] = useState(false);
+  const tx = (en: string, tr: string) => language === "tr" ? tr : en;
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -242,6 +246,16 @@ export default function Home() {
       .select("*").eq("match_id", id).order("created_at", { ascending: true }).limit(100);
     setMessages((chat || []) as ChatMessage[]);
   }, []);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("cf-language");
+    if (saved === "tr" || saved === "en") setLanguage(saved);
+  }, []);
+
+  function changeLanguage(next: "en"|"tr") {
+    setLanguage(next);
+    window.localStorage.setItem("cf-language", next);
+  }
 
   useEffect(() => {
     if (!supabase) return;
@@ -518,6 +532,19 @@ export default function Home() {
     if (error) setNotice(error.message);
   }
 
+  async function runAiAnalysis() {
+    if (!evidenceFile) return;
+    setAiBusy(true); setAiResult(null);
+    try {
+      const image = await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=()=>reject(new Error("Could not read image"));reader.readAsDataURL(evidenceFile);});
+      const response = await fetch("/api/ai-match-analysis",{method:"POST",headers:{"Content-Type":"application/json",...(session?.access_token?{Authorization:"Bearer "+session.access_token}:{})},body:JSON.stringify({image})});
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "AI analysis failed");
+      setAiResult(payload.analysis);
+    } catch(error:any) { setNotice(error.message || "AI analysis failed."); }
+    finally { setAiBusy(false); }
+  }
+
   async function uploadEvidence() {
     if (!supabase || !user || !activeMatch || !evidenceFile) return;
     if (!["image/jpeg", "image/png", "image/webp"].includes(evidenceFile.type) || evidenceFile.size > 10 * 1024 * 1024) {
@@ -653,6 +680,7 @@ export default function Home() {
       <header className="topbar">
         <a className="brand" href="#"><span className="brand-mark"><Flame size={22}/></span><span><b>COUNTERFLAME <em>FACEIT</em> <span className="brand-version">v1.0.0</span></b><small>COMPETITIVE COMMUNITY PLATFORM</small></span></a>
         <div className="top-actions">
+          <select aria-label="Language" className="cf-language-select" value={language} onChange={e=>changeLanguage(e.target.value as "en"|"tr")}><option value="en">English</option><option value="tr">Türkçe</option></select>
           <span className="season-pill"><span/> SEASON 01 · BETA</span>
           {user ? <><span className="user-chip"><span className="avatar">{(profile?.username || user.email || "P").slice(0,1).toUpperCase()}</span><b>{profile?.username || user.email}</b></span><button className="icon-btn" onClick={signOut} title="Sign out"><LogOut size={17}/></button></> : <span className="online-pill">SYSTEM ONLINE</span>}
         </div>
@@ -725,6 +753,8 @@ export default function Home() {
         <section className="auth-layout auth-landing">
           <div className="landing-copy"><span className="landing-kicker"><span className="green-dot"/> COMPETITIVE PLATFORM · SEASON 01</span><h1>PLAY TO<br/><em>CLIMB.</em></h1><p>Build your rank. Find your squad. Own the leaderboard. CounterFlame brings your competitive matches into one focused arena.</p><div className="landing-highlights"><div><b>01</b><span>RANKED<br/>MATCHMAKING</span></div><div><b>02</b><span>PRIVATE<br/>MATCH ROOMS</span></div><div><b>03</b><span>LIVE<br/>LEADERBOARD</span></div></div><div className="landing-footnote"><Flame size={16}/> BUILT FOR THE COMPETITIVE COMMUNITY</div></div>
           <div className="auth-card auth-card-premium">
+            <label>{tx("CHOOSE YOUR LANGUAGE","DİLİNİ SEÇ")}</label>
+            <select aria-label="Choose language" className="cf-input" value={language} onChange={e=>changeLanguage(e.target.value as "en"|"tr")}><option value="en">English</option><option value="tr">Türkçe</option></select>
             <div className="auth-tabs"><button className={authMode==="in"?"selected":""} onClick={()=>setAuthMode("in")}>SIGN IN</button><button className={authMode==="up"?"selected":""} onClick={()=>setAuthMode("up")}>CREATE ACCOUNT</button></div>
             {authMode==="up" && <input className="cf-input" placeholder="Player name (3–20 characters)" value={username} onChange={e=>setUsername(e.target.value)} maxLength={20}/>}
             <input className="cf-input" type="email" placeholder="Email address" value={email} onChange={e=>setEmail(e.target.value)}/>
@@ -778,9 +808,10 @@ export default function Home() {
 
             {view==="ai-analysis" && <div className="panel-card real-module ai-analysis-page">
               <div className="section-heading"><div><span className="eyebrow">COUNTERFLAME INTELLIGENCE</span><h2>AI MAÇ ANALİZİ</h2><p>Maç ekran görüntülerini tek bir yerde topla. AI motoru bağlandığında skor, oyuncu isimleri ve kanıt tutarlılığı burada incelenecek.</p></div><BrainCircuit className="heading-icon"/></div>
-              <div className="ai-status-strip"><span className="ai-status-dot"/><div><b>AI MOTORU BEKLEMEDE</b><small>Otomatik görüntü analizi servisi henüz projeye bağlanmadı. Şu an AI sonucu veya skor üretmiyoruz.</small></div></div>
-              <div className="ai-upload-zone"><div className="ai-upload-icon"><UploadCloud size={25}/></div><b>MAÇ EKRAN GÖRÜNTÜSÜ</b><span>JPG, PNG veya WebP · En fazla 10 MB</span><input className="cf-input file-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setEvidenceFile(e.target.files?.[0]||null)}/><button className="btn-primary full" disabled={!activeMatch||!evidenceFile||busy} onClick={uploadEvidence}>{busy?"YÜKLENİYOR…":"KANITI MAÇA YÜKLE"} <ChevronRight size={16}/></button>{!activeMatch&&<small>Kanıt yüklemek için önce bir maç eşleşmesine katılmalısın.</small>}</div>
-              <div className="ai-analysis-steps"><div><span>01</span><b>Görseli yükle</b><small>Maç ekran görüntüsünü seç.</small></div><div><span>02</span><b>AI doğrulaması</b><small>AI bağlantısı tamamlandığında açılacak.</small></div><div><span>03</span><b>Sonuç kontrolü</b><small>Doğrulanan sonuçlar moderatör onayına gider.</small></div></div>
+              <div className="ai-status-strip"><span className="ai-status-dot"/><div><b>{tx("AI SCREENSHOT ANALYSIS","AI EKRAN GÖRÜNTÜSÜ ANALİZİ")}</b><small>{tx("AI extracts visible match details. A moderator confirms the official result.","AI maç bilgilerini çıkarır. Resmî sonucu moderatör onaylar.")}</small></div></div>
+              <div className="ai-upload-zone"><div className="ai-upload-icon"><UploadCloud size={25}/></div><b>{tx("MATCH SCREENSHOT","MAÇ EKRAN GÖRÜNTÜSÜ")}</b><span>JPG, PNG or WebP · Max 10 MB</span><input className="cf-input file-input" type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{setEvidenceFile(e.target.files?.[0]||null);setAiResult(null);}}/><button className="btn-primary full" disabled={!evidenceFile||aiBusy} onClick={runAiAnalysis}>{aiBusy?tx("ANALYZING…","ANALİZ EDİLİYOR…"):tx("ANALYZE SCREENSHOT","EKRAN GÖRÜNTÜSÜNÜ ANALİZ ET")} <BrainCircuit size={16}/></button><button className="btn-ghost full" disabled={!activeMatch||!evidenceFile||busy} onClick={uploadEvidence}>{busy?tx("UPLOADING…","YÜKLENİYOR…"):tx("SUBMIT EVIDENCE TO MATCH","KANITI MAÇA GÖNDER")} <ChevronRight size={16}/></button></div>
+              {aiResult && <div className="ai-result-card"><b>{tx("AI EXTRACTION RESULT","AI ANALİZ SONUCU")}</b><p>{aiResult.summary}</p><p>Map: {aiResult.map || "—"} · Score: {aiResult.score || "—"} · Mode: {aiResult.mode || "—"}</p><p>Players: {(aiResult.players||[]).join(", ") || "—"}</p><small>{tx("AI output can be wrong. Moderator review is required.","AI çıktısı hatalı olabilir. Moderatör incelemesi gereklidir.")}</small></div>}
+              <div className="ai-analysis-steps"><div><span>01</span><b>{tx("Select image","Görseli seç")}</b><small>{tx("Choose a match screenshot.","Maç ekran görüntüsü seç.")}</small></div><div><span>02</span><b>{tx("AI extraction","AI analizi")}</b><small>{tx("Read visible match details.","Görünen maç bilgilerini oku.")}</small></div><div><span>03</span><b>{tx("Moderator review","Moderatör incelemesi")}</b><small>{tx("A human confirms the result.","Sonucu moderatör doğrular.")}</small></div></div>
             </div>}
             {view==="leaderboard" && <><div className="section-heading"><div><span className="eyebrow">SEASON 01</span><h2>GLOBAL LEADERBOARD</h2><p>Rankings include only moderator-approved match results.</p></div><Trophy className="heading-icon"/></div><Leaderboard rows={leaderboard}/></>}
 
