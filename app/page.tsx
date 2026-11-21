@@ -37,7 +37,6 @@ const navItems = [
   { id: "ai-analysis", label: "AI Maç Analizi", icon: BrainCircuit, group: "ARAÇLAR" },
   { id: "profile", label: "Oyuncu Profili", icon: Activity, group: "HESAP" },
   { id: "settings", label: "Ayarlar", icon: ShieldCheck, group: "HESAP" },
-  { id: "admin", label: "Admin Paneli", icon: ShieldCheck, group: "HESAP" },
 ];
 
 export default function Home() {
@@ -72,6 +71,8 @@ export default function Home() {
   const [tournamentScores, setTournamentScores] = useState<Record<string,{score1:string;score2:string}>>({});
   const [isModerator, setIsModerator] = useState(false);
   const [adminPlayers, setAdminPlayers] = useState<Profile[]>([]);
+  const [adminSearch, setAdminSearch] = useState("");
+  const [adminLoadBusy, setAdminLoadBusy] = useState(false);
   const [adminTargetId, setAdminTargetId] = useState("");
   const [adminElo, setAdminElo] = useState("1000");
   const [adminKills, setAdminKills] = useState("0");
@@ -175,26 +176,34 @@ export default function Home() {
 
   const loadAdminPlayers = useCallback(async () => {
     if (!adminUnlocked) return;
+    setAdminLoadBusy(true);
     try {
       const response = await fetch("/api/admin-players", { cache: "no-store", credentials: "same-origin" });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || "Oyuncu listesi yüklenemedi.");
       const rows = (payload.players || []) as Profile[];
       setAdminPlayers(rows);
-      setAdminTargetId(currentId => {
-        const selected = rows.find(row => row.id === currentId) || rows.find(row => row.id === user?.id) || rows[0];
-        if (selected) {
-          setAdminElo(String(selected.elo));
-          setAdminKills(String(selected.kills ?? 0));
-          setAdminDeaths(String(selected.deaths ?? 0));
-          return selected.id;
-        }
-        return "";
-      });
+      const selected = rows.find(row => row.id === user?.id) || rows[0];
+      setAdminTargetId(selected?.id || "");
+      setAdminElo(selected ? String(selected.elo) : "1000");
+      setAdminKills(selected ? String(selected.kills ?? 0) : "0");
+      setAdminDeaths(selected ? String(selected.deaths ?? 0) : "0");
+      if (!rows.length) setNotice("Veritabanında henüz oyuncu profili bulunamadı.");
     } catch (error: any) {
       setNotice(error.message || "Oyuncu listesi yüklenemedi.");
+    } finally {
+      setAdminLoadBusy(false);
     }
   }, [adminUnlocked, user?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/admin-login", { cache: "no-store", credentials: "same-origin" })
+      .then(response => response.json())
+      .then(payload => { if (!cancelled && payload.authenticated) setAdminUnlocked(true); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (adminUnlocked) void loadAdminPlayers();
@@ -568,7 +577,7 @@ export default function Home() {
       setShowAdminLogin(false);
       setAdminPasswordInput("");
       setNotice("Admin password accepted.");
-      if (user) setView("admin");
+      setView("admin");
     } catch (error: any) {
       setNotice(error.message || "Admin login failed.");
     } finally {
@@ -774,11 +783,10 @@ export default function Home() {
   return (
     <main className="cf-shell">
       <header className="topbar">
-        <a className="brand" href="#"><span className="brand-mark"><Flame size={22}/></span><span><b>COUNTERFLAME <em>FACEIT</em> <span className="brand-version">v1.0.1</span></b><small>COMPETITIVE COMMUNITY PLATFORM</small></span></a>
+        <a className="brand" href="#"><span className="brand-mark"><Flame size={22}/></span><span><b>COUNTERFLAME <em>FACEIT</em> <span className="brand-version">v1.0.2</span></b><small>COMPETITIVE COMMUNITY PLATFORM</small></span></a>
         <div className="top-actions">
           <select aria-label="Language" className="cf-language-select" value={language} onChange={e=>changeLanguage(e.target.value as "en"|"tr")}><option value="en">English</option><option value="tr">Türkçe</option></select>
           <span className="season-pill"><span/> SEASON 01 · BETA</span>
-          <button className="btn-primary compact" onClick={()=>setShowAdminLogin(true)}>LOGIN <ChevronRight size={14}/></button>
           {user ? <><span className="user-chip"><span className="avatar">{(profile?.username || user.email || "P").slice(0,1).toUpperCase()}</span><b>{profile?.username || user.email}</b></span><button className="icon-btn" onClick={signOut} title="Sign out"><LogOut size={17}/></button></> : <span className="online-pill">SYSTEM ONLINE</span>}
         </div>
       </header>
@@ -797,7 +805,7 @@ export default function Home() {
           {name:"COMMUNITY", title:"TOPLULUK", hint:"Sosyal alanlar"},
           {name:"ACCOUNT", title:"OYUNCU", hint:"Profil ve tercihler"}
         ].map(section => {
-          const groupItems = navItems.filter(item => (item.id !== "admin" || adminUnlocked) && (
+          const groupItems = navItems.filter(item => (
             section.name==="OVERVIEW" ? item.group==="ANA MENÜ" :
             section.name==="PLAY" ? item.group==="OYNA" :
             section.name==="COMPETE" ? item.group==="REKABET" :
@@ -836,7 +844,7 @@ export default function Home() {
       </nav>
       {mobileMoreOpen && <div className="mobile-more-panel">
         <div className="mobile-more-heading"><b>Diğer bölümler</b><button onClick={()=>setMobileMoreOpen(false)} aria-label="Menüyü kapat"><X size={18}/></button></div>
-        {navItems.filter(item=>(item.id!=="admin"||(isModerator&&adminUnlocked))&&!["overview","matchmaking","room","leaderboard","profile"].includes(item.id)).map(item=>
+        {navItems.filter(item=>!["overview","matchmaking","room","leaderboard","profile"].includes(item.id)).map(item=>
           <button key={item.id} className={view===item.id?"mobile-more-link active":"mobile-more-link"} onClick={()=>{setView(item.id);setMobileMoreOpen(false);}}>
             <item.icon size={17}/><span>{item.label}</span><ChevronRight size={15}/>
           </button>
@@ -945,15 +953,15 @@ export default function Home() {
               <div className="settings-row"><div><b>Signed-in account</b><small>{user.email}</small></div><span className="tag-muted">AUTHENTICATED</span></div>
               <div className="settings-row"><div><b>Database protection</b><small>Supabase Row Level Security is active on player and match data.</small></div><span className="tag-orange">RLS ON</span></div>
               <div className="settings-row"><div><b>Change password</b><small>Send a secure password reset link to your account email.</small></div><button className="btn-ghost compact" onClick={async()=>{const {error}=await supabase!.auth.resetPasswordForEmail(user.email!);setNotice(error?error.message:"Password reset email requested.");}}>SEND RESET</button></div>
-              {adminUnlocked ? <div className="admin-settings-entry"><div className="admin-entry-icon"><ShieldCheck size={19}/></div><div><b>ADMIN PANELİ</b><small>ELO ve oyuncu istatistiklerini yönet.</small></div><button className="btn-primary compact" onClick={()=>setView("admin")}>AÇ <ChevronRight size={14}/></button></div> : <div className="settings-row"><div><b>Yönetici araçları</b><small>Admin paneli yalnızca yetkilendirilmiş hesaplarda görünür.</small></div><span className="tag-muted">KİLİTLİ</span></div>}
+              <div className="admin-settings-entry"><div className="admin-entry-icon"><ShieldCheck size={19}/></div><div><b>ADMIN PANELİ</b><small>{adminUnlocked ? "Oturum açık · oyuncu istatistiklerini yönet." : "Yönetici şifresiyle giriş yap ve kontrol panelini aç."}</small></div>{adminUnlocked ? <button className="btn-primary compact" onClick={()=>{setView("admin");void loadAdminPlayers();}}>PANELİ AÇ <ChevronRight size={14}/></button> : <button className="btn-primary compact" onClick={()=>setShowAdminLogin(true)}>ADMIN GİRİŞİ <ChevronRight size={14}/></button>}</div>
               <button className="btn-ghost" onClick={signOut}><LogOut size={15}/> SIGN OUT</button>
             </div>}
 
             {view==="admin" && <div className="panel-card real-module admin-page">
-              <div className="section-heading"><div><span className="eyebrow">COUNTERFLAME CONTROL</span><h2>ADMIN PANELİ</h2><p>Kendi hesabın dahil oyuncuların ELO ve K/D istatistiklerini yönet.</p></div><ShieldCheck className="heading-icon"/></div>
+              <div className="section-heading"><div><span className="eyebrow">COUNTERFLAME CONTROL · V1.0.2</span><h2>ADMIN PANELİ</h2><p>Oyuncu hesaplarını ara, seç ve kalıcı istatistiklerini güvenli şekilde güncelle.</p></div><div className="admin-header-actions"><button className="btn-ghost compact" onClick={()=>setView("settings")}>AYARLAR</button><button className="btn-ghost compact" onClick={async()=>{await fetch("/api/admin-login",{method:"DELETE",credentials:"same-origin"});setAdminUnlocked(false);setAdminPlayers([]);setView("settings");setNotice("Admin oturumu kapatıldı.");}}>ÇIKIŞ</button></div></div>
               {!adminUnlocked ? <div className="empty-list"><ShieldCheck size={24}/><b>Admin login required</b><span>Use the LOGIN button in the top bar first.</span><button className="btn-primary" onClick={()=>setShowAdminLogin(true)}>LOGIN</button></div> : <>
                 <div className="admin-warning"><ShieldCheck size={17}/><span>Yönetici işlemleri sunucu tarafında yetki kontrolünden geçer. Herkes bu değerleri değiştiremez.</span></div>
-                <div className="admin-stat-strip"><div><small>OYUNCU SAYISI</small><b>{adminPlayers.length}</b></div><div><small>SEÇİLİ HESAP</small><b>{adminPlayers.find(p=>p.id===adminTargetId)?.username || "—"}</b></div><div><small>YETKİ</small><b>ADMIN</b></div></div>
+                <div className="admin-stat-strip"><div><small>TOPLAM OYUNCU</small><b>{adminPlayers.length}</b></div><div><small>SEÇİLİ HESAP</small><b>{adminPlayers.find(p=>p.id===adminTargetId)?.username || "—"}</b></div><div><small>ADMIN OTURUMU</small><b>AKTİF</b></div></div>
                 <label className="field-label">OYUNCU SEÇ · KENDİNİ DE SEÇEBİLİRSİN</label>
                 <select className="cf-input admin-select" value={adminTargetId} onChange={e=>{const id=e.target.value;const p=adminPlayers.find(row=>row.id===id);setAdminTargetId(id);if(p){setAdminElo(String(p.elo));setAdminKills(String(p.kills??0));setAdminDeaths(String(p.deaths??0));}}}>
                   {adminPlayers.map(p=><option key={p.id} value={p.id}>{p.username} · {p.elo} ELO</option>)}
@@ -965,8 +973,13 @@ export default function Home() {
                   <div className="admin-kd-preview"><small>K/D ORANI</small><b>{Number(adminDeaths)>0?(Number(adminKills)/Number(adminDeaths)).toFixed(2):Number(adminKills)>0?"∞":"0.00"}</b></div>
                 </div>
                 <button className="btn-primary full" disabled={busy||!adminTargetId} onClick={saveAdminStats}>İSTATİSTİKLERİ KAYDET <CheckCircle2 size={16}/></button>
-                <div className="admin-player-list"><div className="card-top"><b>OYUNCU LİSTESİ</b><button className="text-action" onClick={()=>void loadAdminPlayers()}><RefreshCw size={14}/> YENİLE</button></div>
-                  {adminPlayers.map(p=><button key={p.id} className={adminTargetId===p.id?"admin-player-row selected":"admin-player-row"} onClick={()=>{setAdminTargetId(p.id);setAdminElo(String(p.elo));setAdminKills(String(p.kills??0));setAdminDeaths(String(p.deaths??0));}}><span><b>{p.username}{p.id===user.id?" · SEN":""}</b><small>{p.wins}G / {p.losses}M · {p.matches_played} maç · K/D {p.kills??0}/{p.deaths??0}</small></span><strong>{p.elo.toLocaleString()} ELO</strong></button>)}
+                <div className="admin-player-list">
+                  <div className="admin-player-toolbar"><div><b>OYUNCU YÖNETİMİ</b><small>{adminPlayers.length} kayıtlı hesap</small></div><button className="btn-ghost compact" disabled={adminLoadBusy} onClick={()=>void loadAdminPlayers()}><RefreshCw size={14}/> {adminLoadBusy?"YÜKLENİYOR":"YENİLE"}</button></div>
+                  <div className="admin-search-wrap"><Search size={16}/><input className="cf-input" value={adminSearch} onChange={e=>setAdminSearch(e.target.value)} placeholder="Oyuncu adıyla ara..."/></div>
+                  <div className="admin-player-list-scroll">
+                    {adminLoadBusy && adminPlayers.length===0 ? <div className="admin-empty-state"><RefreshCw size={20}/> Oyuncular yükleniyor...</div> : adminPlayers.filter(p=>p.username.toLowerCase().includes(adminSearch.trim().toLowerCase())).map(p=><button key={p.id} className={adminTargetId===p.id?"admin-player-row selected":"admin-player-row"} onClick={()=>{setAdminTargetId(p.id);setAdminElo(String(p.elo));setAdminKills(String(p.kills??0));setAdminDeaths(String(p.deaths??0));}}><span className="admin-player-avatar">{p.username.slice(0,1).toUpperCase()}</span><span className="admin-player-details"><b>{p.username}{p.id===user?.id?" · SEN":""}</b><small>{p.wins}G / {p.losses}M · {p.matches_played} maç · K/D {p.kills??0}/{p.deaths??0}</small></span><strong>{p.elo.toLocaleString("tr-TR")} ELO</strong>{adminTargetId===p.id&&<CheckCircle2 size={16}/>}</button>)}
+                    {!adminLoadBusy && adminPlayers.filter(p=>p.username.toLowerCase().includes(adminSearch.trim().toLowerCase())).length===0 && <div className="admin-empty-state"><Search size={20}/>{adminPlayers.length?"Aramana uygun oyuncu bulunamadı.":"Henüz kayıtlı oyuncu yok."}</div>}
+                  </div>
                 </div>
               </>}
             </div>}
