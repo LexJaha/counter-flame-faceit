@@ -901,3 +901,51 @@ body{background-color:#07090d;background-image:radial-gradient(ellipse at 72% 0%
  .room-ai-link{margin-top:14px}
 }
 @media(prefers-reduced-motion:reduce){.room-orbit-ring-a,.room-orbit-ring-b{animation:none}}
+
+
+/* Version identity, clear team-side labels, and premium admin workspace */
+.brand{gap:10px}
+.brand-version{display:inline-flex;vertical-align:middle;align-items:center;margin-left:7px;padding:3px 7px;border:1px solid rgba(255,143,94,.34);border-radius:6px;background:linear-gradient(135deg,rgba(255,133,78,.16),rgba(255,255,255,.035));color:#ffad83;font-size:9px;font-style:normal;font-weight:850;letter-spacing:.1em;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.admin-settings-entry{display:flex;align-items:center;gap:12px;margin:15px 0;padding:14px;border:1px solid rgba(255,133,78,.25);border-radius:14px;background:linear-gradient(120deg,rgba(255,124,69,.09),rgba(255,255,255,.025))}
+.admin-entry-icon{display:grid;width:39px;height:39px;flex:none;place-items:center;border:1px solid rgba(255,133,78,.24);border-radius:11px;background:rgba(255,124,69,.12);color:#ff9a68}
+.admin-settings-entry>div:nth-child(2){display:grid;flex:1;gap:4px;min-width:0}
+.admin-settings-entry b{font-size:10px;letter-spacing:.1em}
+.admin-settings-entry small{font-size:9px;color:#8d9aaa}
+.admin-page{max-width:940px;margin:0 auto}
+.admin-warning{display:flex;align-items:center;gap:10px;margin:16px 0;padding:13px;border:1px solid rgba(255,184,91,.22);border-radius:12px;background:rgba(255,174,77,.055);color:#ffc17d;font-size:10px;line-height:1.6}
+.admin-warning svg{flex:none}
+.admin-stat-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0 20px}
+.admin-stat-strip>div{display:grid;gap:7px;min-width:0;padding:13px;border:1px solid #273442;border-radius:12px;background:linear-gradient(145deg,#17212c,#101720)}
+.admin-stat-strip small{font-size:8px;letter-spacing:.13em;color:#8492a2}
+.admin-stat-strip b{overflow:hidden;text-overflow:ellipsis;font-size:17px;color:#f4f6f8}
+.admin-select{margin:7px 0 16px}
+.admin-edit-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:15px}
+.admin-edit-grid label{display:grid;gap:7px;min-width:0}
+.admin-edit-grid label>span,.admin-kd-preview small{font-size:8px;font-weight:800;letter-spacing:.12em;color:#91a0b0}
+.admin-kd-preview{display:flex;min-height:66px;flex-direction:column;justify-content:center;gap:7px;padding:10px 12px;border:1px solid rgba(255,133,78,.22);border-radius:11px;background:rgba(255,133,78,.07)}
+.admin-kd-preview b{font-size:20px;color:#ffad83}
+.admin-player-list{margin-top:22px;padding-top:17px;border-top:1px solid #283442}
+.admin-player-row{display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;padding:12px;border:1px solid transparent;border-bottom-color:#25313e;background:transparent;color:#e9edf2;text-align:left}
+.admin-player-row>span{display:grid;gap:5px;min-width:0}
+.admin-player-row b{font-size:11px}
+.admin-player-row small{font-size:9px;color:#8795a5}
+.admin-player-row strong{flex:none;color:#ffad83;font-size:11px}
+.admin-player-row.selected{border-color:rgba(255,133,78,.24);border-radius:10px;background:rgba(255,133,78,.075)}
+.room-side-note{margin:10px 0 0;color:#8291a2;font-size:9px;line-height:1.65}
+.team-title{display:inline-flex;align-items:center;gap:7px}
+.team-title:before{content:"";width:7px;height:7px;border-radius:50%;background:#70b7ff;box-shadow:0 0 10px rgba(112,183,255,.6)}
+.team-title.team-two:before{background:#ff9a68;box-shadow:0 0 10px rgba(255,154,104,.6)}
+@media(max-width:850px){
+ .brand-version{margin-left:4px;padding:2px 5px;font-size:8px}
+ .admin-stat-strip{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+ .admin-stat-strip>div{padding:10px 8px}
+ .admin-stat-strip b{font-size:13px}
+ .admin-edit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .admin-player-row{padding:11px 8px}
+}
+@media(max-width:390px){
+ .admin-settings-entry{gap:8px;padding:10px}
+ .admin-entry-icon{width:32px;height:32px}
+ .admin-settings-entry small{font-size:8px}
+ .admin-stat-strip small{font-size:7px}
+}
