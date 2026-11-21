@@ -686,7 +686,8 @@ export default function Home() {
         <div className="top-actions">
           <select aria-label="Language" className="cf-language-select" value={language} onChange={e=>changeLanguage(e.target.value as "en"|"tr")}><option value="en">English</option><option value="tr">Türkçe</option></select>
           <span className="season-pill"><span/> SEASON 01 · BETA</span>
-          {user ? <><span className="user-chip"><span className="avatar">{(profile?.username || user.email || "P").slice(0,1).toUpperCase()}</span><b>{profile?.username || user.email}</b></span><button className="icon-btn" onClick={signOut} title="Sign out"><LogOut size={17}/></button></> : <button className="btn-primary compact" onClick={()=>setShowAdminLogin(true)}>LOGIN <ChevronRight size={14}/></button><span className="online-pill">SYSTEM ONLINE</span>}
+          <button className="btn-primary compact" onClick={()=>setShowAdminLogin(true)}>LOGIN <ChevronRight size={14}/></button>
+          {user ? <><span className="user-chip"><span className="avatar">{(profile?.username || user.email || "P").slice(0,1).toUpperCase()}</span><b>{profile?.username || user.email}</b></span><button className="icon-btn" onClick={signOut} title="Sign out"><LogOut size={17}/></button></> : <span className="online-pill">SYSTEM ONLINE</span>}
         </div>
       </header>
 
@@ -704,7 +705,7 @@ export default function Home() {
           {name:"COMMUNITY", title:"TOPLULUK", hint:"Sosyal alanlar"},
           {name:"ACCOUNT", title:"OYUNCU", hint:"Profil ve tercihler"}
         ].map(section => {
-          const groupItems = navItems.filter(item => (item.id !== "admin" || isModerator) && (
+          const groupItems = navItems.filter(item => (item.id !== "admin" || (isModerator && adminUnlocked)) && (
             section.name==="OVERVIEW" ? item.group==="ANA MENÜ" :
             section.name==="PLAY" ? item.group==="OYNA" :
             section.name==="COMPETE" ? item.group==="REKABET" :
