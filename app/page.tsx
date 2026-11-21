@@ -67,6 +67,7 @@ export default function Home() {
   const [tournamentDescription, setTournamentDescription] = useState("");
   const [tournamentMode, setTournamentMode] = useState("1v1");
   const [tournamentCapacity, setTournamentCapacity] = useState("8");
+  const [tournamentScores, setTournamentScores] = useState<Record<string,{score1:string;score2:string}>>({});
   const [isModerator, setIsModerator] = useState(false);
   const [view, setView] = useState("overview");
   const [email, setEmail] = useState("");
@@ -532,12 +533,17 @@ export default function Home() {
   async function createTournament() {
     if (!supabase || !user) return;
     setBusy(true);
-    const { error } = await supabase.from("cf_tournaments").insert({
+    const { data, error } = await supabase.from("cf_tournaments").insert({
       name: tournamentName.trim(), description: tournamentDescription.trim(),
       mode: tournamentMode, max_players: Number(tournamentCapacity), created_by: user.id
-    });
+    }).select("id").single();
     if (error) setNotice(error.message);
-    else { setTournamentName(""); setTournamentDescription(""); setNotice("Turnuva oluşturuldu. Oyuncular katılabilir."); await loadTournaments(); }
+    else {
+      const joined = await supabase.rpc("cf_join_tournament", { p_tournament: data.id });
+      setTournamentName(""); setTournamentDescription("");
+      setNotice(joined.error ? joined.error.message : "Turnuva oluşturuldu. İlk oyuncu olarak kaydoldun.");
+      await loadTournaments();
+    }
     setBusy(false);
   }
 
@@ -563,6 +569,23 @@ export default function Home() {
     const { error } = await supabase.rpc("cf_start_tournament", { p_tournament: id });
     setNotice(error ? error.message : "Turnuva başladı. İlk tur eşleşmeleri hazır.");
     await loadTournaments(); setBusy(false);
+  }
+
+  async function submitTournamentResult(match: TournamentMatch) {
+    if (!supabase || !match.player1_id || !match.player2_id) return;
+    const values = tournamentScores[match.id] || { score1: "13", score2: "8" };
+    const a = Number(values.score1), b = Number(values.score2);
+    if (!Number.isInteger(a) || !Number.isInteger(b) || a < 0 || b < 0 || a > 99 || b > 99 || a === b) {
+      setNotice("Geçerli ve birbirinden farklı iki skor gir.");
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase.rpc("cf_report_tournament_result", {
+      p_match: match.id, p_winner: a > b ? match.player1_id : match.player2_id, p_score1: a, p_score2: b
+    });
+    setNotice(error ? error.message : "Sonuç kaydedildi; sonraki tur otomatik oluşturuldu.");
+    await loadTournaments();
+    setBusy(false);
   }
 
   async function reviewResult(matchId: string, approve: boolean) {
@@ -773,7 +796,9 @@ export default function Home() {
                     {t.created_by===user.id ? <button className="btn-primary compact" disabled={busy||t.entry_count!==t.max_players} onClick={()=>startTournament(t.id)}>TURNUVAYI BAŞLAT</button> : t.my_entry ? <button className="btn-ghost compact" disabled={busy} onClick={()=>leaveTournament(t.id)}>AYRIL</button> : <button className="btn-primary compact" disabled={busy||t.entry_count>=t.max_players} onClick={()=>joinTournament(t.id)}>KATIL</button>}
                     <span className="muted small">{t.entry_count===t.max_players?"Kontenjan doldu":`${t.max_players-t.entry_count} boş yer`}</span>
                   </div>}
-                  {t.matches.length>0 && <div className="team-roster">{t.matches.map(m=><div className="team-roster-row" key={m.id}><span className="tag-orange">R{m.round_no} · M{m.match_no}</span><span><b>{m.player1_id?(t.player_names[m.player1_id]||"Oyuncu"):"TBD"} vs {m.player2_id?(t.player_names[m.player2_id]||"Oyuncu"):"TBD"}</b><small>{m.status==="completed"?`SONUÇ ${m.score1} : ${m.score2}`:"MAÇ BEKLİYOR"}</small></span></div>)}</div>}
+                  {t.matches.length>0 && <div className="team-roster">{t.matches.map(m=><div className="team-roster-row" key={m.id} style={{alignItems:"flex-start",flexWrap:"wrap"}}><span className="tag-orange">R{m.round_no} · M{m.match_no}</span><span style={{flex:1,minWidth:150}}><b>{m.player1_id?(t.player_names[m.player1_id]||"Oyuncu"):"TBD"} vs {m.player2_id?(t.player_names[m.player2_id]||"Oyuncu"):"TBD"}</b><small>{m.status==="completed"?`SONUÇ ${m.score1} : ${m.score2} · KAZANAN ${t.player_names[m.winner_id||""]||"Oyuncu"}`:"MAÇ BEKLİYOR"}</small></span>
+                    {m.status==="scheduled" && (m.player1_id===user.id||m.player2_id===user.id) && <div className="review-actions"><input className="cf-input" style={{width:65}} type="number" min="0" max="99" aria-label="Skor 1" value={(tournamentScores[m.id]||{score1:"13",score2:"8"}).score1} onChange={e=>setTournamentScores(old=>({...old,[m.id]:{...(old[m.id]||{score1:"13",score2:"8"}),score1:e.target.value}}))}/><input className="cf-input" style={{width:65}} type="number" min="0" max="99" aria-label="Skor 2" value={(tournamentScores[m.id]||{score1:"13",score2:"8"}).score2} onChange={e=>setTournamentScores(old=>({...old,[m.id]:{...(old[m.id]||{score1:"13",score2:"8"}),score2:e.target.value}}))}/><button className="btn-primary compact" disabled={busy} onClick={()=>submitTournamentResult(m)}>SONUCU GÖNDER</button></div>}
+                  </div>)}</div>}
                 </article>)}
               </div>}
             </div>}
