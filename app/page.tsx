@@ -14,6 +14,8 @@ type Match = { id: string; code: string; mode: string; map: string; status: stri
 type Player = { user_id: string; team_no: number; username: string; elo: number };
 type ChatMessage = { id: string; match_id: string; sender_id: string; body: string; created_at: string };
 type PendingResult = { match_id: string; winner_team: number; score1: number; score2: number; submitted_by: string; created_at: string };
+type DirectThread = { conversation_id: string; peer_id: string; peer_name: string; peer_elo: number; last_message: string; updated_at: string };
+type DirectMessage = { id: string; conversation_id: string; sender_id: string; body: string; created_at: string };
 
 const modes = ["1v1", "2v2", "3v3", "4v4", "5v5"];
 const maps = ["Random", "Harbor", "Factory", "Outpost", "District"];
@@ -39,6 +41,15 @@ export default function Home() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [pendingResults, setPendingResults] = useState<PendingResult[]>([]);
+  const [profileUsername, setProfileUsername] = useState("");
+  const [profileBio, setProfileBio] = useState("");
+  const [playerSearch, setPlayerSearch] = useState("");
+  const [playerResults, setPlayerResults] = useState<Profile[]>([]);
+  const [directThreads, setDirectThreads] = useState<DirectThread[]>([]);
+  const [activeConversation, setActiveConversation] = useState<string | null>(null);
+  const [activePeer, setActivePeer] = useState<Profile | null>(null);
+  const [directMessages, setDirectMessages] = useState<DirectMessage[]>([]);
+  const [directDraft, setDirectDraft] = useState("");
   const [isModerator, setIsModerator] = useState(false);
   const [view, setView] = useState("overview");
   const [email, setEmail] = useState("");
@@ -63,6 +74,34 @@ export default function Home() {
     if (!supabase) return;
     const { data } = await supabase.from("profiles").select("*").eq("id", id).maybeSingle();
     setProfile((data as Profile | null) ?? null);
+  }, []);
+
+  const loadConversations = useCallback(async () => {
+    if (!supabase || !user) return;
+    const { data: threads, error } = await supabase.from("cf_direct_threads")
+      .select("conversation_id,user_low,user_high")
+      .or(`user_low.eq.${user.id},user_high.eq.${user.id}`);
+    if (error || !threads?.length) { setDirectThreads([]); return; }
+    const ids = threads.map((thread: any) => thread.conversation_id);
+    const peerIds = threads.map((thread: any) => thread.user_low === user.id ? thread.user_high : thread.user_low);
+    const [{ data: people }, { data: latest }] = await Promise.all([
+      supabase.from("profiles").select("id,username,elo,wins,losses,matches_played").in("id", peerIds),
+      supabase.from("cf_messages").select("conversation_id,body,created_at").in("conversation_id", ids).order("created_at", { ascending: false }).limit(100)
+    ]);
+    const list = threads.map((thread: any) => {
+      const peerId = thread.user_low === user.id ? thread.user_high : thread.user_low;
+      const person = (people || []).find((item: any) => item.id === peerId);
+      const last = (latest || []).find((item: any) => item.conversation_id === thread.conversation_id);
+      return { conversation_id: thread.conversation_id, peer_id: peerId, peer_name: person?.username || "Player", peer_elo: person?.elo || 1000, last_message: last?.body || "Start a conversation", updated_at: last?.created_at || "" };
+    }).sort((a: DirectThread,b: DirectThread) => b.updated_at.localeCompare(a.updated_at));
+    setDirectThreads(list);
+  }, [user]);
+
+  const loadDirectMessages = useCallback(async (conversationId: string) => {
+    if (!supabase) return;
+    const { data, error } = await supabase.from("cf_messages").select("*")
+      .eq("conversation_id", conversationId).order("created_at", { ascending: true }).limit(100);
+    if (!error) setDirectMessages((data || []) as DirectMessage[]);
   }, []);
 
   const loadLeaderboard = useCallback(async () => {
@@ -125,8 +164,24 @@ export default function Home() {
     void loadProfile(user.id);
     void loadMatches();
     void loadLeaderboard();
+    void loadConversations();
     supabase?.rpc("cf_is_moderator").then(({ data }) => setIsModerator(Boolean(data)));
-  }, [user, loadProfile, loadMatches, loadLeaderboard]);
+  }, [user, loadProfile, loadMatches, loadLeaderboard, loadConversations]);
+
+  useEffect(() => {
+    setProfileUsername(profile?.username || "");
+    setProfileBio(profile?.bio || "");
+  }, [profile?.id, profile?.username, profile?.bio]);
+
+  useEffect(() => {
+    if (!activeConversation || !supabase) return;
+    void loadDirectMessages(activeConversation);
+    const channel = supabase.channel("cf-dm-" + activeConversation)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "cf_messages", filter: "conversation_id=eq." + activeConversation },
+        (payload) => setDirectMessages(old => old.some(item => item.id === (payload.new as any).id) ? old : [...old, payload.new as DirectMessage]))
+      .subscribe();
+    return () => { void supabase?.removeChannel(channel); };
+  }, [activeConversation, loadDirectMessages]);
 
   useEffect(() => {
     if (!user || !supabase) return;
@@ -175,6 +230,57 @@ export default function Home() {
         : "Welcome to CounterFlame.");
     } catch (error: any) { setNotice(error.message || "Authentication failed."); }
     finally { setBusy(false); }
+  }
+
+  async function searchPlayers() {
+    if (!supabase || !playerSearch.trim() || playerSearch.trim().length < 2) { setPlayerResults([]); return; }
+    const { data, error } = await supabase.from("profiles")
+      .select("id,username,elo,wins,losses,matches_played")
+      .ilike("username", `%${playerSearch.trim().replace(/[%_]/g, "")}%`)
+      .neq("id", user.id).order("elo", { ascending: false }).limit(12);
+    if (error) setNotice(error.message);
+    else setPlayerResults((data || []) as Profile[]);
+  }
+
+  async function openDirectMessage(peer: Profile) {
+    if (!supabase) return;
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.rpc("cf_open_dm", { p_other: peer.id });
+      if (error) throw error;
+      setActiveConversation(data as string);
+      setActivePeer(peer);
+      setView("messages");
+      await loadDirectMessages(data as string);
+      await loadConversations();
+    } catch (error: any) { setNotice(error.message || "Could not open conversation."); }
+    finally { setBusy(false); }
+  }
+
+  async function sendDirectMessage(event: FormEvent) {
+    event.preventDefault();
+    if (!supabase || !user || !activeConversation || !directDraft.trim()) return;
+    const body = directDraft.trim();
+    setDirectDraft("");
+    const { error } = await supabase.from("cf_messages").insert({
+      conversation_id: activeConversation, sender_id: user.id, body
+    });
+    if (error) { setDirectDraft(body); setNotice(error.message); }
+    else void loadConversations();
+  }
+
+  async function saveProfile() {
+    if (!supabase || !user) return;
+    const cleanName = profileUsername.trim();
+    const cleanBio = profileBio.trim();
+    if (cleanName.length < 3 || cleanName.length > 20) { setNotice("Player name must be 3–20 characters."); return; }
+    setBusy(true);
+    const { data, error } = await supabase.from("profiles")
+      .update({ username: cleanName, bio: cleanBio.slice(0, 240), updated_at: new Date().toISOString() })
+      .eq("id", user.id).select("*").single();
+    if (error) setNotice(error.message);
+    else { setProfile(data as Profile); setNotice("Player profile saved."); }
+    setBusy(false);
   }
 
   async function createMatch() {
@@ -408,11 +514,39 @@ export default function Home() {
             {view==="room" && <>{activeMatch ? <MatchRoom match={activeMatch} players={players} messages={messages} userId={user.id} draft={draft} setDraft={setDraft} onSend={sendMessage} onCopy={copyCode} evidenceFile={evidenceFile} setEvidenceFile={setEvidenceFile} onUpload={uploadEvidence} busy={busy} winner={winner} setWinner={setWinner} score1={score1} setScore1={setScore1} score2={score2} setScore2={setScore2} onSubmitResult={submitResult}/> : <div className="panel-card empty-state"><Gamepad2 size={34}/><h3>NO ACTIVE ROOM</h3><p>Join a match with a code or create a new lobby.</p><button className="btn-primary" onClick={()=>setView("matchmaking")}>FIND A MATCH</button></div>}</>}
 
 
-            {["teams","tournaments","messages","notifications","profile","settings"].includes(view) && <div className="panel-card feature-placeholder">
-              <span className="tag-orange">V10000 MODÜLÜ</span>
+            {view==="profile" && <div className="panel-card real-module">
+              <div className="section-heading"><div><span className="eyebrow">PLAYER IDENTITY</span><h2>OYUNCU PROFİLİ</h2><p>Bilgilerin doğrudan CounterFlame veritabanına kaydedilir.</p></div><Activity className="heading-icon"/></div>
+              <div className="profile-summary"><div className="profile-large-avatar">{(profile?.username||"P").slice(0,1).toUpperCase()}</div><div><b>{profile?.username || "Oyuncu"}</b><span>{profile?.elo ?? 1000} ELO · {profile?.matches_played ?? 0} MATCHES</span></div></div>
+              <label className="field-label">PLAYER NAME</label><input className="cf-input" value={profileUsername} maxLength={20} onChange={e=>setProfileUsername(e.target.value)} />
+              <label className="field-label">BIO · MAX 240 CHARACTERS</label><textarea className="cf-input profile-bio-input" value={profileBio} maxLength={240} onChange={e=>setProfileBio(e.target.value)} placeholder="Tell the community about your playstyle." />
+              <button className="btn-primary" disabled={busy} onClick={saveProfile}>SAVE PROFILE <CheckCircle2 size={16}/></button>
+              <div className="profile-record"><span>WINS <b>{profile?.wins ?? 0}</b></span><span>LOSSES <b>{profile?.losses ?? 0}</b></span><span>WIN RATE <b>{profile?.matches_played ? Math.round((profile.wins/profile.matches_played)*100) : 0}%</b></span></div>
+            </div>}
+
+            {view==="settings" && <div className="panel-card real-module">
+              <div className="section-heading"><div><span className="eyebrow">ACCOUNT SECURITY</span><h2>HESAP AYARLARI</h2><p>Oturum ve hesap güvenliği.</p></div><ShieldCheck className="heading-icon"/></div>
+              <div className="settings-row"><div><b>Signed-in account</b><small>{user.email}</small></div><span className="tag-muted">AUTHENTICATED</span></div>
+              <div className="settings-row"><div><b>Database protection</b><small>Supabase Row Level Security is active on player and match data.</small></div><span className="tag-orange">RLS ON</span></div>
+              <div className="settings-row"><div><b>Change password</b><small>Send a secure password reset link to your account email.</small></div><button className="btn-ghost compact" onClick={async()=>{const {error}=await supabase!.auth.resetPasswordForEmail(user.email!);setNotice(error?error.message:"Password reset email requested.");}}>SEND RESET</button></div>
+              <button className="btn-ghost" onClick={signOut}><LogOut size={15}/> SIGN OUT</button>
+            </div>}
+
+            {view==="messages" && <div className="panel-card real-module dm-module">
+              <div className="section-heading"><div><span className="eyebrow">PLAYER NETWORK</span><h2>DIRECT MESSAGES</h2><p>Oyuncularla bire bir sohbet. Engellenen hesaplar mesaj gönderemez.</p></div><MessageSquare className="heading-icon"/></div>
+              <div className="dm-search"><input className="cf-input" value={playerSearch} onChange={e=>setPlayerSearch(e.target.value)} placeholder="Oyuncu adı ara..." onKeyDown={e=>{if(e.key==="Enter")void searchPlayers();}}/><button className="btn-primary" onClick={searchPlayers}><Search size={16}/> SEARCH</button></div>
+              {playerResults.length>0 && <div className="dm-player-results">{playerResults.map(person=><button className="dm-player-result" key={person.id} onClick={()=>openDirectMessage(person)} disabled={busy}><span className="profile-mini-avatar">{person.username.slice(0,1).toUpperCase()}</span><span><b>{person.username}</b><small>{person.elo} ELO · {person.matches_played} MATCHES</small></span><Send size={15}/></button>)}</div>}
+              <div className="dm-layout"><div className="dm-thread-list"><span className="eyebrow">YOUR CONVERSATIONS</span>{directThreads.length===0?<p className="muted small">Henüz sohbetin yok. Yukarıdan oyuncu ara.</p>:directThreads.map(thread=><button key={thread.conversation_id} className={activeConversation===thread.conversation_id?"dm-thread active":"dm-thread"} onClick={()=>{setActiveConversation(thread.conversation_id);setActivePeer({id:thread.peer_id,username:thread.peer_name,elo:thread.peer_elo,wins:0,losses:0,matches_played:0});}}><span className="profile-mini-avatar">{thread.peer_name.slice(0,1).toUpperCase()}</span><span><b>{thread.peer_name}</b><small>{thread.last_message}</small></span></button>)}</div>
+                <div className="dm-chat"><div className="dm-chat-head"><b>{activePeer?.username || "Sohbet seç"}</b><small>{activePeer ? `PLAYER · ${activePeer.elo} ELO` : "Bir oyuncu seçerek sohbete başla."}</small></div>
+                  <div className="dm-messages">{activeConversation ? directMessages.map(message=><div key={message.id} className={message.sender_id===user.id?"dm-message mine":"dm-message"}><small>{message.sender_id===user.id?"YOU":"PLAYER"} · {new Date(message.created_at).toLocaleString("tr-TR",{hour:"2-digit",minute:"2-digit"})}</small><p>{message.body}</p></div>) : <div className="chat-empty">Henüz sohbet seçilmedi.</div>}</div>
+                  <form className="chat-form" onSubmit={sendDirectMessage}><input className="cf-input" value={directDraft} onChange={e=>setDirectDraft(e.target.value)} maxLength={2000} placeholder="Mesajını yaz..." disabled={!activeConversation}/><button className="btn-primary send-btn" disabled={!activeConversation||!directDraft.trim()}><Send size={16}/></button></form>
+                </div></div>
+            </div>}
+
+            {["teams","tournaments","notifications"].includes(view) && <div className="panel-card feature-placeholder">
+              <span className="tag-orange">ROADMAP MODULE</span>
               <h2>{navItems.find(item=>item.id===view)?.label}</h2>
-              <p className="muted">Bu bölüm sol menüde ayrı tutuldu. Güvenli ve gerçek veritabanı bağlantısı tamamlanmadan sahte veri veya çalışıyormuş gibi görünen özellik gösterilmez.</p>
-              <div className="placeholder-status"><span className="green-dot"/> MODÜL PLANI HAZIR · GELİŞTİRME SIRASINDA</div>
+              <p className="muted">Bu modüller için henüz üretim veritabanı tabloları ve güvenlik kuralları tamamlanmadı. Gerçek işlevler hazır olana kadar sahte içerik gösterilmiyor.</p>
+              <div className="placeholder-status"><span className="green-dot"/> DATABASE MODULE NOT DEPLOYED</div>
             </div>}
 
             {isModerator && <section className="moderator-panel"><div className="section-heading"><div><span className="eyebrow">STAFF TOOLS</span><h2>RESULT REVIEW QUEUE</h2></div><ShieldCheck className="heading-icon"/></div>{pendingResults.length===0?<p className="muted">No pending match results.</p>:pendingResults.map(item=><div className="review-row" key={item.match_id}><div><b>{item.score1} : {item.score2}</b><span>Winner: Team {item.winner_team} · {new Date(item.created_at).toLocaleString("tr-TR")}</span><small>{item.match_id.slice(0,8)}…</small></div><div className="review-actions"><button className="btn-ghost compact" disabled={busy} onClick={()=>reviewResult(item.match_id,false)}>REJECT</button><button className="btn-primary compact" disabled={busy} onClick={()=>reviewResult(item.match_id,true)}><CheckCircle2 size={14}/> APPROVE</button></div></div>)}</section>}
