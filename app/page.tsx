@@ -16,6 +16,9 @@ type ChatMessage = { id: string; match_id: string; sender_id: string; body: stri
 type PendingResult = { match_id: string; winner_team: number; score1: number; score2: number; submitted_by: string; created_at: string };
 type DirectThread = { conversation_id: string; peer_id: string; peer_name: string; peer_elo: number; last_message: string; updated_at: string };
 type DirectMessage = { id: string; conversation_id: string; sender_id: string; body: string; created_at: string };
+type TeamMember = { user_id: string; username: string; elo: number; role: string };
+type TeamData = { id: string; name: string; tag: string; description: string; role: string; members: TeamMember[] };
+type TeamListing = { id: string; name: string; tag: string; description: string; member_count: number };
 
 const modes = ["1v1", "2v2", "3v3", "4v4", "5v5"];
 const maps = ["Random", "Harbor", "Factory", "Outpost", "District"];
@@ -50,6 +53,11 @@ export default function Home() {
   const [activePeer, setActivePeer] = useState<Profile | null>(null);
   const [directMessages, setDirectMessages] = useState<DirectMessage[]>([]);
   const [directDraft, setDirectDraft] = useState("");
+  const [myTeam, setMyTeam] = useState<TeamData | null>(null);
+  const [teamDirectory, setTeamDirectory] = useState<TeamListing[]>([]);
+  const [teamName, setTeamName] = useState("");
+  const [teamTag, setTeamTag] = useState("");
+  const [teamDescription, setTeamDescription] = useState("");
   const [isModerator, setIsModerator] = useState(false);
   const [view, setView] = useState("overview");
   const [email, setEmail] = useState("");
@@ -103,6 +111,34 @@ export default function Home() {
       .eq("conversation_id", conversationId).order("created_at", { ascending: true }).limit(100);
     if (!error) setDirectMessages((data || []) as DirectMessage[]);
   }, []);
+
+  const loadTeams = useCallback(async () => {
+    if (!supabase || !user) return;
+    const [{ data: membership }, { data: allTeams }] = await Promise.all([
+      supabase.from("cf_team_members").select("team_id,role").eq("user_id", user.id).maybeSingle(),
+      supabase.from("cf_teams").select("id,name,tag,description").order("created_at", { ascending: false }).limit(50)
+    ]);
+    if (membership) {
+      const [{ data: team }, { data: members }] = await Promise.all([
+        supabase.from("cf_teams").select("id,name,tag,description").eq("id", membership.team_id).single(),
+        supabase.from("cf_team_members").select("team_id,user_id,role").eq("team_id", membership.team_id)
+      ]);
+      const ids = (members || []).map((item: any) => item.user_id);
+      const { data: people } = ids.length ? await supabase.from("profiles").select("id,username,elo").in("id", ids) : { data: [] as any[] };
+      if (team) setMyTeam({
+        ...team, role: membership.role,
+        members: (members || []).map((item: any) => {
+          const p = (people || []).find((person: any) => person.id === item.user_id);
+          return { user_id: item.user_id, username: p?.username || "Player", elo: p?.elo || 1000, role: item.role };
+        })
+      });
+    } else setMyTeam(null);
+    const teamIds = (allTeams || []).map((item: any) => item.id);
+    const { data: roster } = teamIds.length ? await supabase.from("cf_team_members").select("team_id,user_id").in("team_id", teamIds) : { data: [] as any[] };
+    setTeamDirectory((allTeams || []).map((team: any) => ({
+      ...team, member_count: (roster || []).filter((member: any) => member.team_id === team.id).length
+    })));
+  }, [user]);
 
   const loadLeaderboard = useCallback(async () => {
     if (!supabase) return;
@@ -165,8 +201,9 @@ export default function Home() {
     void loadMatches();
     void loadLeaderboard();
     void loadConversations();
+    void loadTeams();
     supabase?.rpc("cf_is_moderator").then(({ data }) => setIsModerator(Boolean(data)));
-  }, [user, loadProfile, loadMatches, loadLeaderboard, loadConversations]);
+  }, [user, loadProfile, loadMatches, loadLeaderboard, loadConversations, loadTeams]);
 
   useEffect(() => {
     setProfileUsername(profile?.username || "");
@@ -230,6 +267,35 @@ export default function Home() {
         : "Welcome to CounterFlame.");
     } catch (error: any) { setNotice(error.message || "Authentication failed."); }
     finally { setBusy(false); }
+  }
+
+  async function createTeam() {
+    if (!supabase) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("cf_create_team", {
+      p_name: teamName.trim(), p_tag: teamTag.trim().toUpperCase(), p_description: teamDescription.trim()
+    });
+    if (error) setNotice(error.message);
+    else { setTeamName(""); setTeamTag(""); setTeamDescription(""); setNotice("Team created. You are the captain."); await loadTeams(); }
+    setBusy(false);
+  }
+
+  async function joinTeam(teamId: string) {
+    if (!supabase) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("cf_join_team", { p_team: teamId });
+    if (error) setNotice(error.message);
+    else { setNotice("You joined the team."); await loadTeams(); }
+    setBusy(false);
+  }
+
+  async function leaveTeam() {
+    if (!supabase) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("cf_leave_team");
+    if (error) setNotice(error.message);
+    else { setNotice("You left the team."); await loadTeams(); }
+    setBusy(false);
   }
 
   async function searchPlayers() {
@@ -513,6 +579,20 @@ export default function Home() {
 
             {view==="room" && <>{activeMatch ? <MatchRoom match={activeMatch} players={players} messages={messages} userId={user.id} draft={draft} setDraft={setDraft} onSend={sendMessage} onCopy={copyCode} evidenceFile={evidenceFile} setEvidenceFile={setEvidenceFile} onUpload={uploadEvidence} busy={busy} winner={winner} setWinner={setWinner} score1={score1} setScore1={setScore1} score2={score2} setScore2={setScore2} onSubmitResult={submitResult}/> : <div className="panel-card empty-state"><Gamepad2 size={34}/><h3>NO ACTIVE ROOM</h3><p>Join a match with a code or create a new lobby.</p><button className="btn-primary" onClick={()=>setView("matchmaking")}>FIND A MATCH</button></div>}</>}
 
+
+            {view==="teams" && <div className="panel-card real-module">
+              <div className="section-heading"><div><span className="eyebrow">SQUAD MANAGEMENT</span><h2>TEAMS</h2><p>Gerçek takım kayıtları ve üye listeleri.</p></div><Users className="heading-icon"/></div>
+              {myTeam ? <>
+                <div className="team-identity"><div className="team-tag">{myTeam.tag}</div><div><b>{myTeam.name}</b><small>{myTeam.description || "No team description"} · {myTeam.members.length}/5 PLAYERS</small></div><span className="tag-orange">{myTeam.role.toUpperCase()}</span></div>
+                <div className="team-roster">{myTeam.members.map(member=><div className="team-roster-row" key={member.user_id}><span className="profile-mini-avatar">{member.username.slice(0,1).toUpperCase()}</span><span><b>{member.username}</b><small>{member.elo} ELO</small></span><span className={member.role==="captain"?"tag-orange":"tag-muted"}>{member.role.toUpperCase()}</span></div>)}</div>
+                <button className="btn-ghost" disabled={busy} onClick={leaveTeam}>LEAVE TEAM</button>
+                {myTeam.role==="captain" && myTeam.members.length>1 && <p className="muted small">Captain must transfer leadership before leaving while other members remain.</p>}
+              </> : <>
+                <div className="team-create-form"><span className="eyebrow">CREATE YOUR SQUAD</span><input className="cf-input" placeholder="Team name (3–24 characters)" maxLength={24} value={teamName} onChange={e=>setTeamName(e.target.value)}/><input className="cf-input" placeholder="TAG (2–5 letters/numbers)" maxLength={5} value={teamTag} onChange={e=>setTeamTag(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,""))}/><textarea className="cf-input profile-bio-input" placeholder="Team description (optional)" maxLength={240} value={teamDescription} onChange={e=>setTeamDescription(e.target.value)}/><button className="btn-primary" disabled={busy||teamName.trim().length<3||teamTag.length<2} onClick={createTeam}>CREATE TEAM <Plus size={16}/></button></div>
+                <div className="section-heading sub-heading"><div><span className="eyebrow">OPEN SQUADS</span><h2>FIND A TEAM</h2></div><button className="text-action" onClick={loadTeams}><RefreshCw size={14}/> REFRESH</button></div>
+                {teamDirectory.length===0?<div className="empty-list"><Users size={22}/><b>No teams yet</b><span>Create the first squad for the community.</span></div>:<div className="team-directory">{teamDirectory.map(team=><div className="team-directory-row" key={team.id}><div className="team-tag">{team.tag}</div><div><b>{team.name}</b><small>{team.description || "Competitive squad"} · {team.member_count}/5 players</small></div><button className="btn-ghost compact" disabled={busy||team.member_count>=5} onClick={()=>joinTeam(team.id)}>{team.member_count>=5?"FULL":"JOIN"}</button></div>)}</div>}
+              </>}
+            </div>}
 
             {view==="profile" && <div className="panel-card real-module">
               <div className="section-heading"><div><span className="eyebrow">PLAYER IDENTITY</span><h2>OYUNCU PROFİLİ</h2><p>Bilgilerin doğrudan CounterFlame veritabanına kaydedilir.</p></div><Activity className="heading-icon"/></div>
