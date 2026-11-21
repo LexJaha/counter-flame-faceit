@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     const kills = Number(body?.kills);
     const deaths = Number(body?.deaths);
     if (!userId || ![elo, kills, deaths].every(Number.isInteger) ||
-        elo < 0 || elo > 10000 || kills < 0 || kills > 999999 ||
+        elo < 0 || elo > 999999 || kills < 0 || kills > 999999 ||
         deaths < 0 || deaths > 999999) {
       return NextResponse.json({ error: "Geçersiz oyuncu istatistikleri." }, { status: 400 });
     }
