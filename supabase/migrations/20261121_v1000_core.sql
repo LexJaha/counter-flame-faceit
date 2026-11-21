@@ -324,3 +324,16 @@ begin
   update public.cf_matches set status='live' where id=v_match;
   return jsonb_build_object('status','matched','mode',p_mode,'match_id',v_match,'players_found',v_size,'players_needed',v_size,'elo_range',v_gap);
 end; $$;
+
+-- Direct messages are delivered live to both participants.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'cf_messages'
+  ) then
+    alter publication supabase_realtime add table public.cf_messages;
+  end if;
+end $$;
