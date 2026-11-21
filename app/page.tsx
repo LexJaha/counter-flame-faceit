@@ -260,12 +260,13 @@ export default function Home() {
   // This lets an already-waiting player complete a match as soon as enough real players arrive.
   useEffect(() => {
     if (!user || !supabase || queueState !== "waiting") return;
+    const client = supabase;
     let checking = false;
     const checkQueue = async () => {
       if (checking) return;
       checking = true;
       try {
-        const { data, error } = await supabase.rpc("cf_join_matchmaking", { p_mode: mode });
+        const { data, error } = await client.rpc("cf_join_matchmaking", { p_mode: mode });
         if (error) throw error;
         if (data?.status === "matched" && data.match_id) {
           setQueueState("");
