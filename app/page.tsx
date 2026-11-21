@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { ChangeEvent, FormEvent, ReactNode } from "react";
 import {
   Activity, Bell, CheckCircle2, ChevronRight, Clock, Copy, Flame, Gamepad2,
   LayoutDashboard, LogOut, Medal, MessageSquare, Plus, RefreshCw, Search, BrainCircuit,
@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-type Profile = { id: string; username: string; elo: number; wins: number; losses: number; matches_played: number; kills?: number; deaths?: number; bio?: string | null };
+type Profile = { id: string; username: string; elo: number; wins: number; losses: number; matches_played: number; kills?: number; deaths?: number; bio?: string | null; avatar_url?: string | null };
 type Match = { id: string; code: string; mode: string; map: string; status: string; created_at: string; created_by?: string | null };
 type Player = { user_id: string; team_no: number; username: string; elo: number };
 type ChatMessage = { id: string; match_id: string; sender_id: string; body: string; created_at: string };
@@ -50,6 +50,7 @@ export default function Home() {
   const [pendingResults, setPendingResults] = useState<PendingResult[]>([]);
   const [profileUsername, setProfileUsername] = useState("");
   const [profileBio, setProfileBio] = useState("");
+  const [avatarBusy, setAvatarBusy] = useState(false);
   const [playerSearch, setPlayerSearch] = useState("");
   const [playerResults, setPlayerResults] = useState<Profile[]>([]);
   const [directThreads, setDirectThreads] = useState<DirectThread[]>([]);
@@ -485,6 +486,39 @@ export default function Home() {
     else void loadConversations();
   }
 
+  async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!supabase || !user || !file) return;
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowed.includes(file.type)) { setNotice("Sadece JPG, PNG, WEBP veya GIF yükleyebilirsin."); return; }
+    if (file.size > 2 * 1024 * 1024) { setNotice("Profil fotoğrafı en fazla 2 MB olabilir."); return; }
+    const extension = file.type === "image/jpeg" ? "jpg" : file.type.split("/")[1];
+    const path = `${user.id}/${crypto.randomUUID()}.${extension}`;
+    setAvatarBusy(true);
+    setNotice("");
+    try {
+      const { data: uploaded, error: uploadError } = await supabase.storage
+        .from("cf-avatars")
+        .upload(path, file, { contentType: file.type, cacheControl: "3600", upsert: false });
+      if (uploadError) throw uploadError;
+      const { data: publicData } = supabase.storage.from("cf-avatars").getPublicUrl(uploaded.path);
+      const { data, error } = await supabase.from("profiles")
+        .update({ avatar_url: publicData.publicUrl, updated_at: new Date().toISOString() })
+        .eq("id", user.id).select("*").single();
+      if (error) {
+        await supabase.storage.from("cf-avatars").remove([path]);
+        throw error;
+      }
+      setProfile(data as Profile);
+      setNotice("Profil fotoğrafın kaydedildi.");
+    } catch (error: any) {
+      setNotice(error?.message || "Fotoğraf yüklenemedi. Tekrar dene.");
+    } finally {
+      setAvatarBusy(false);
+    }
+  }
+
   async function saveProfile() {
     if (!supabase || !user) return;
     const cleanName = profileUsername.trim();
@@ -792,7 +826,7 @@ export default function Home() {
         <div className="top-actions">
           <select aria-label="Language" className="cf-language-select" value={language} onChange={e=>changeLanguage(e.target.value as "en"|"tr")}><option value="en">English</option><option value="tr">Türkçe</option></select>
           <span className="season-pill"><span/> SEASON 01 · BETA</span>
-          {user ? <><span className="user-chip"><span className="avatar">{(profile?.username || user.email || "P").slice(0,1).toUpperCase()}</span><b>{profile?.username || user.email}</b></span><button className="icon-btn" onClick={signOut} title="Sign out"><LogOut size={17}/></button></> : <span className="online-pill">SYSTEM ONLINE</span>}
+          {user ? <><span className="user-chip"><span className="avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : (profile?.username || user.email || "P").slice(0,1).toUpperCase()}</span><b>{profile?.username || user.email}</b></span><button className="icon-btn" onClick={signOut} title="Sign out"><LogOut size={17}/></button></> : <span className="online-pill">SYSTEM ONLINE</span>}
         </div>
       </header>
 
@@ -829,7 +863,7 @@ export default function Home() {
         })}
         <div className="menu-spacer"/>
         <div className="global-player">
-          <div className="player-avatar">{(profile?.username||user?.email||"P").slice(0,1).toUpperCase()}</div>
+          <div className="player-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : (profile?.username||user?.email||"P").slice(0,1).toUpperCase()}</div>
           <div className="player-meta"><b>{profile?.username || (user ? "Oyuncu" : "Misafir")}</b><span className="rank-label">{user ? `RATING · ${profile?.elo ?? 1000} ELO` : "GİRİŞ YAPILMADI"}</span></div>
           <span className="player-status"><i/></span>
         </div>
@@ -946,7 +980,9 @@ export default function Home() {
 
             {view==="profile" && <div className="panel-card real-module">
               <div className="section-heading"><div><span className="eyebrow">PLAYER IDENTITY</span><h2>OYUNCU PROFİLİ</h2><p>Bilgilerin doğrudan CounterFlame veritabanına kaydedilir.</p></div><Activity className="heading-icon"/></div>
-              <div className="profile-summary"><div className="profile-large-avatar">{(profile?.username||"P").slice(0,1).toUpperCase()}</div><div><b>{profile?.username || "Oyuncu"}</b><span>{profile?.elo ?? 1000} ELO · {profile?.matches_played ?? 0} MATCHES</span></div></div>
+              <div className="profile-summary"><div className="profile-large-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt="Profil fotoğrafı" /> : (profile?.username||"P").slice(0,1).toUpperCase()}</div><div><b>{profile?.username || "Oyuncu"}</b><span>{profile?.elo ?? 1000} ELO · {profile?.matches_played ?? 0} MATCHES</span></div></div>
+               <label className="field-label" htmlFor="profile-avatar-file">PROFILE PHOTO · JPG / PNG / WEBP / GIF · MAX 2 MB</label>
+               <div className="avatar-upload-row"><input id="profile-avatar-file" className="avatar-file-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={uploadAvatar} disabled={!user || avatarBusy}/><label className="btn-ghost compact" htmlFor="profile-avatar-file">{avatarBusy ? "UPLOADING..." : profile?.avatar_url ? "CHANGE PHOTO" : "ADD PHOTO"} <UploadCloud size={15}/></label><span className="muted small">{profile?.avatar_url ? "Fotoğrafın profilinde ve sıralamada görünür." : "Bir fotoğraf seçerek profilini kişiselleştir."}</span></div>
               <label className="field-label">PLAYER NAME</label><input className="cf-input" value={profileUsername} maxLength={20} onChange={e=>setProfileUsername(e.target.value)} />
               <label className="field-label">BIO · MAX 240 CHARACTERS</label><textarea className="cf-input profile-bio-input" value={profileBio} maxLength={240} onChange={e=>setProfileBio(e.target.value)} placeholder="Tell the community about your playstyle." />
               <button className="btn-primary" disabled={busy} onClick={saveProfile}>SAVE PROFILE <CheckCircle2 size={16}/></button>
@@ -1056,7 +1092,7 @@ function MatchList({matches,onJoin}:{matches:Match[];onJoin:(code:string)=>void}
 }
 
 function Leaderboard({rows}:{rows:Profile[]}) {
-  return <div className="leaderboard panel-card"><div className="card-top"><div><span className="eyebrow">TOP PLAYERS</span><h3>RANKINGS</h3></div><Medal className="heading-icon"/></div>{rows.length===0?<div className="empty-list"><Trophy size={24}/><b>Rankings will appear here</b><span>Complete verified matches to earn ELO.</span></div>:rows.map((row,index)=><div className="leader-row" key={row.id}><div className={"rank-number "+(index===0?"gold":"")}>{String(index+1).padStart(2,"0")}</div><div className="leader-avatar">{row.username.slice(0,1).toUpperCase()}</div><div className="leader-name"><b>{row.username}</b><span>{row.matches_played} MATCHES · {row.wins} WINS</span></div><div className="leader-elo"><b>{row.elo.toLocaleString()}</b><small>ELO</small></div></div>)}</div>;
+  return <div className="leaderboard panel-card"><div className="card-top"><div><span className="eyebrow">TOP PLAYERS</span><h3>RANKINGS</h3></div><Medal className="heading-icon"/></div>{rows.length===0?<div className="empty-list"><Trophy size={24}/><b>Rankings will appear here</b><span>Complete verified matches to earn ELO.</span></div>:rows.map((row,index)=><div className="leader-row" key={row.id}><div className={"rank-number "+(index===0?"gold":"")}>{String(index+1).padStart(2,"0")}</div><div className="leader-avatar">{row.avatar_url ? <img src={row.avatar_url} alt="" /> : row.username.slice(0,1).toUpperCase()}</div><div className="leader-name"><b>{row.username}</b><span>{row.matches_played} MATCHES · {row.wins} WINS</span></div><div className="leader-elo"><b>{row.elo.toLocaleString()}</b><small>ELO</small></div></div>)}</div>;
 }
 
 function MatchRoom({match,players,messages,userId,draft,setDraft,onSend}:{
