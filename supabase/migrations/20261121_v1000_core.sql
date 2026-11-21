@@ -411,3 +411,80 @@ revoke all on function public.cf_leave_team() from public,anon;
 grant execute on function public.cf_create_team(text,text,text) to authenticated;
 grant execute on function public.cf_join_team(uuid) to authenticated;
 grant execute on function public.cf_leave_team() to authenticated;
+
+
+-- Realtime activity notifications for direct messages, teams and match decisions.
+create table if not exists public.cf_notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  kind text not null check (kind in ('direct_message','team_join','match_result')),
+  title text not null check (char_length(title) between 1 and 100),
+  body text not null default '' check (char_length(body) <= 300),
+  link text not null default '',
+  read_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create index if not exists cf_notifications_user_created_idx on public.cf_notifications(user_id,created_at desc);
+alter table public.cf_notifications enable row level security;
+drop policy if exists cf_notifications_read_own on public.cf_notifications;
+create policy cf_notifications_read_own on public.cf_notifications for select to authenticated using(user_id=(select auth.uid()));
+revoke insert,update,delete on public.cf_notifications from anon,authenticated;
+grant select on public.cf_notifications to authenticated;
+create or replace function public.cf_mark_notifications_read()
+returns void language sql security definer set search_path=public,auth as $$
+  update public.cf_notifications set read_at=now() where user_id=auth.uid() and read_at is null;
+$$;
+revoke all on function public.cf_mark_notifications_read() from public,anon;
+grant execute on function public.cf_mark_notifications_read() to authenticated;
+create or replace function public.cf_notify_direct_message()
+returns trigger language plpgsql security definer set search_path=public,auth as $$
+declare v_peer uuid;
+begin
+  select user_id into v_peer from public.cf_conversation_members
+  where conversation_id=new.conversation_id and user_id<>new.sender_id limit 1;
+  if v_peer is not null then
+    insert into public.cf_notifications(user_id,kind,title,body,link)
+    values(v_peer,'direct_message','New direct message',left(new.body,180),'messages');
+  end if;
+  return new;
+end; $$;
+revoke all on function public.cf_notify_direct_message() from public,anon,authenticated;
+drop trigger if exists cf_notify_direct_message_trigger on public.cf_messages;
+create trigger cf_notify_direct_message_trigger after insert on public.cf_messages for each row execute function public.cf_notify_direct_message();
+create or replace function public.cf_notify_team_join()
+returns trigger language plpgsql security definer set search_path=public,auth as $$
+declare v_owner uuid; v_name text; v_username text;
+begin
+  if new.role<>'member' then return new; end if;
+  select owner_id,name into v_owner,v_name from public.cf_teams where id=new.team_id;
+  select username into v_username from public.profiles where id=new.user_id;
+  if v_owner is not null and v_owner<>new.user_id then
+    insert into public.cf_notifications(user_id,kind,title,body,link)
+    values(v_owner,'team_join','New team member',coalesce(v_username,'A player')||' joined '||coalesce(v_name,'your team'),'teams');
+  end if;
+  return new;
+end; $$;
+revoke all on function public.cf_notify_team_join() from public,anon,authenticated;
+drop trigger if exists cf_notify_team_join_trigger on public.cf_team_members;
+create trigger cf_notify_team_join_trigger after insert on public.cf_team_members for each row execute function public.cf_notify_team_join();
+create or replace function public.cf_notify_match_result()
+returns trigger language plpgsql security definer set search_path=public,auth as $$
+declare v_player record; v_title text; v_body text;
+begin
+  if new.status not in ('approved','rejected') or old.status=new.status then return new; end if;
+  v_title:=case when new.status='approved' then 'Match result approved' else 'Match result rejected' end;
+  v_body:=case when new.status='approved' then 'A moderator approved the reported result. ELO has been updated.' else 'A moderator rejected the reported result. Check the match room.' end;
+  for v_player in select user_id from public.cf_match_players where match_id=new.match_id loop
+    insert into public.cf_notifications(user_id,kind,title,body,link) values(v_player.user_id,'match_result',v_title,v_body,'room');
+  end loop;
+  return new;
+end; $$;
+revoke all on function public.cf_notify_match_result() from public,anon,authenticated;
+drop trigger if exists cf_notify_match_result_trigger on public.cf_match_results;
+create trigger cf_notify_match_result_trigger after update of status on public.cf_match_results for each row execute function public.cf_notify_match_result();
+do $$
+begin
+  if not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='cf_notifications') then
+    alter publication supabase_realtime add table public.cf_notifications;
+  end if;
+end $$;
