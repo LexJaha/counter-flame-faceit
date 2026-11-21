@@ -698,3 +698,18 @@ body{background-color:#07090d;background-image:radial-gradient(ellipse at 72% 0%
 .team-create-form{background:#111923;border-color:#293746}
 @media(max-width:900px){.cf-shell{padding:0 16px}.global-sidebar{border-radius:14px}.dashboard-hero{border-radius:15px}}
 @media(max-width:560px){.cf-shell{padding:0 11px}.topbar{height:66px}.top-actions{gap:8px}.season-pill{display:none}.dashboard-topline{margin-top:20px}.dashboard-hero{padding:24px 20px}.dashboard-hero-foot{gap:9px;font-size:7px}.dashboard-stat{padding:13px}.dashboard-stat>b{font-size:21px}}
+
+
+/* Animated CF matchmaking indicator */
+.cf-search-loader{position:relative;display:flex;min-height:205px;flex-direction:column;align-items:center;justify-content:center;gap:9px;margin-top:16px;padding:18px 12px;overflow:hidden;border:1px solid rgba(255,130,78,.18);border-radius:14px;background:radial-gradient(circle at 50% 40%,rgba(255,113,56,.12),transparent 54%),#0c121a;text-align:center}
+.cf-loader-ring{position:relative;display:grid;width:94px;height:94px;place-items:center;border:3px solid rgba(255,137,86,.13);border-top-color:#ff8956;border-right-color:#ffb080;border-radius:50%;animation:cf-ring-spin 1.25s linear infinite;box-shadow:0 0 28px rgba(255,113,56,.09),inset 0 0 22px rgba(255,113,56,.05)}
+.cf-loader-ring:before,.cf-loader-ring:after{position:absolute;content:"";border-radius:50%}
+.cf-loader-ring:before{inset:7px;border:1px dashed rgba(255,164,123,.35);animation:cf-ring-spin 5s linear infinite reverse}
+.cf-loader-ring:after{width:7px;height:7px;top:8px;left:13px;background:#ffc19e;box-shadow:0 0 12px #ff8956}
+.cf-loader-core{display:grid;width:57px;height:57px;place-items:center;border:1px solid rgba(255,137,86,.32);border-radius:50%;background:linear-gradient(145deg,#25202a,#111923);color:#ff9b6b;font-size:19px;font-weight:1000;letter-spacing:-.08em;box-shadow:0 0 24px rgba(255,113,56,.16)}
+.cf-search-loader>b{margin-top:4px;color:#f3f5f8;font-size:10px;font-weight:900;letter-spacing:.2em}
+.cf-search-loader>span{max-width:250px;color:#8592a2;font-size:9px;line-height:1.6}
+.cf-loader-pulse{position:absolute;bottom:0;left:0;width:35%;height:2px;background:linear-gradient(90deg,transparent,#ff8956,transparent);animation:cf-loader-scan 2s ease-in-out infinite}
+@keyframes cf-ring-spin{to{transform:rotate(360deg)}}
+@keyframes cf-loader-scan{0%{transform:translateX(-100%)}100%{transform:translateX(390%)}}
+@media(prefers-reduced-motion:reduce){.cf-loader-ring,.cf-loader-ring:before,.cf-loader-pulse{animation:none}}
