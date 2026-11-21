@@ -15,6 +15,7 @@ A dark, orange-accented competitive community platform built with Next.js, TypeS
 - Editable player profiles (username and bio) backed by Supabase.
 - Player search and one-to-one direct messages with block-aware messaging rules and realtime delivery.
 - Team creation, public squad discovery, five-player roster limits and team membership controls.
+- Realtime notifications for direct messages, team joins and moderator match decisions.
 - Account blocking and user reports stored under Row Level Security.
 
 ## Important verification limitation
@@ -68,7 +69,7 @@ The V1000 name is the long-term product track, not a claim that one thousand rel
 - **V2:** team invitations, captain transfers and team management extensions.
 - **V3:** tournaments, brackets, check-ins and match scheduling.
 - **V4:** moderator console, disputes, audit history and moderation analytics.
-- **V5:** notifications, achievements, seasons and rewards.
+- **V5:** achievements, seasons and rewards.
 - **V6:** stronger matchmaking calibration, rate limits, abuse prevention and load testing.
 - **V7:** PWA polish, accessibility, observability and production deployment checks.
 
