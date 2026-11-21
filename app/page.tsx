@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import type { FormEvent, ReactNode } from "react";
 import {
   Activity, Bell, CheckCircle2, ChevronRight, Clock, Copy, Flame, Gamepad2,
   LayoutDashboard, LogOut, Medal, MessageSquare, Plus, RefreshCw, Search,
@@ -205,7 +206,7 @@ export default function Home() {
     setBusy(false);
   }
 
-  async function sendMessage(event: React.FormEvent) {
+  async function sendMessage(event: FormEvent) {
     event.preventDefault();
     if (!supabase || !user || !activeMatch || !draft.trim()) return;
     const body = draft.trim(); setDraft("");
@@ -354,7 +355,7 @@ export default function Home() {
   );
 }
 
-function Stat({icon,label,value,detail}:{icon:React.ReactNode;label:string;value:string;detail:string}) {
+function Stat({icon,label,value,detail}:{icon:ReactNode;label:string;value:string;detail:string}) {
   return <div className="stat-card"><div className="stat-icon">{icon}</div><div><small>{label}</small><b>{value}</b><span>{detail}</span></div></div>;
 }
 
@@ -368,7 +369,7 @@ function Leaderboard({rows}:{rows:Profile[]}) {
 }
 
 function MatchRoom({match,players,messages,userId,draft,setDraft,onSend,onCopy,evidenceFile,setEvidenceFile,onUpload,busy,winner,setWinner,score1,setScore1,score2,setScore2,onSubmitResult}:{
-  match:Match;players:Player[];messages:ChatMessage[];userId:string;draft:string;setDraft:(v:string)=>void;onSend:(e:React.FormEvent)=>void;onCopy:()=>void;
+  match:Match;players:Player[];messages:ChatMessage[];userId:string;draft:string;setDraft:(v:string)=>void;onSend:(e:FormEvent)=>void;onCopy:()=>void;
   evidenceFile:File|null;setEvidenceFile:(v:File|null)=>void;onUpload:()=>void;busy:boolean;winner:string;setWinner:(v:string)=>void;score1:string;setScore1:(v:string)=>void;score2:string;setScore2:(v:string)=>void;onSubmitResult:()=>void;
 }) {
   return <><div className="section-heading"><div><span className="eyebrow">LIVE MATCH SPACE</span><h2>MATCH ROOM</h2><p>Coordinate with players, share evidence and report the result.</p></div><span className="tag-orange">{match.status.toUpperCase()}</span></div>
