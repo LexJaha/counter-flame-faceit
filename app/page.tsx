@@ -657,7 +657,7 @@ export default function Home() {
           <div className="player-meta"><b>{profile?.username || (user ? "Oyuncu" : "Misafir")}</b><span className="rank-label">{user ? `RATING · ${profile?.elo ?? 1000} ELO` : "GİRİŞ YAPILMADI"}</span></div>
           <span className="player-status"><i/></span>
         </div>
-        <div className="sidebar-bottom"><span className="green-dot"/> COUNTERFLAME <b>V6</b><small>BUILT FOR COMPETITIVE PLAY</small></div>
+        <div className="sidebar-bottom"><span className="green-dot"/> COUNTERFLAME <b>V5000</b><small>BUILT FOR COMPETITIVE PLAY</small></div>
       </aside>
 
       {notice && <div className="notice"><span>{notice}</span><button onClick={() => setNotice("")}><X size={16}/></button></div>}
@@ -810,7 +810,7 @@ export default function Home() {
 
       </div>
 
-      <footer className="footer"><span>COUNTERFLAME <b>FACEIT</b> · V6 DEVELOPMENT TRACK</span><span>COMMUNITY PROJECT · NOT AFFILIATED WITH ANY GAME PUBLISHER</span></footer>
+      <footer className="footer"><span>COUNTERFLAME <b>FACEIT</b> · V5000 UI EDITION</span><span>COMMUNITY PROJECT · NOT AFFILIATED WITH ANY GAME PUBLISHER</span></footer>
     </main>
   );
 }
