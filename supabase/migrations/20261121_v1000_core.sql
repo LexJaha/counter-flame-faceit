@@ -337,3 +337,77 @@ begin
     alter publication supabase_realtime add table public.cf_messages;
   end if;
 end $$;
+
+
+-- Production team management: one team per player, five players per team.
+create table if not exists public.cf_teams (
+  id uuid primary key default gen_random_uuid(),
+  name text not null check (char_length(btrim(name)) between 3 and 24),
+  tag text not null check (tag ~ '^[A-Z0-9]{2,5}$'),
+  description text not null default '' check (char_length(description) <= 240),
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+create unique index if not exists cf_teams_name_lower_key on public.cf_teams (lower(name));
+create unique index if not exists cf_teams_tag_key on public.cf_teams (tag);
+create table if not exists public.cf_team_members (
+  team_id uuid not null references public.cf_teams(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  role text not null default 'member' check (role in ('captain','member')),
+  joined_at timestamptz not null default now(),
+  primary key (team_id,user_id)
+);
+create unique index if not exists cf_team_members_one_team_per_user on public.cf_team_members(user_id);
+create index if not exists cf_team_members_team_idx on public.cf_team_members(team_id);
+alter table public.cf_teams enable row level security;
+alter table public.cf_team_members enable row level security;
+drop policy if exists cf_teams_read_authenticated on public.cf_teams;
+create policy cf_teams_read_authenticated on public.cf_teams for select to authenticated using (true);
+drop policy if exists cf_team_members_read_authenticated on public.cf_team_members;
+create policy cf_team_members_read_authenticated on public.cf_team_members for select to authenticated using (true);
+revoke insert, update, delete on public.cf_teams from anon, authenticated;
+revoke insert, update, delete on public.cf_team_members from anon, authenticated;
+grant select on public.cf_teams, public.cf_team_members to authenticated;
+create or replace function public.cf_create_team(p_name text,p_tag text,p_description text default '')
+returns uuid language plpgsql security definer set search_path=public,auth as $$
+declare v_me uuid:=auth.uid(); v_team uuid; v_tag text:=upper(trim(coalesce(p_tag,'')));
+begin
+  if v_me is null then raise exception 'Sign in first.'; end if;
+  if char_length(trim(coalesce(p_name,''))) not between 3 and 24 then raise exception 'Team name must be 3–24 characters.'; end if;
+  if v_tag !~ '^[A-Z0-9]{2,5}$' then raise exception 'Team tag must be 2–5 letters or numbers.'; end if;
+  if exists(select 1 from public.cf_team_members where user_id=v_me) then raise exception 'You are already in a team.'; end if;
+  insert into public.cf_teams(name,tag,description,owner_id) values(trim(p_name),v_tag,left(trim(coalesce(p_description,'')),240),v_me) returning id into v_team;
+  insert into public.cf_team_members(team_id,user_id,role) values(v_team,v_me,'captain');
+  return v_team;
+end; $$;
+create or replace function public.cf_join_team(p_team uuid)
+returns void language plpgsql security definer set search_path=public,auth as $$
+declare v_me uuid:=auth.uid(); v_count integer;
+begin
+  if v_me is null then raise exception 'Sign in first.'; end if;
+  if exists(select 1 from public.cf_team_members where user_id=v_me) then raise exception 'You are already in a team.'; end if;
+  perform 1 from public.cf_teams where id=p_team for update;
+  if not found then raise exception 'Team not found.'; end if;
+  select count(*) into v_count from public.cf_team_members where team_id=p_team;
+  if v_count>=5 then raise exception 'This team is full (5 players).'; end if;
+  insert into public.cf_team_members(team_id,user_id,role) values(p_team,v_me,'member');
+end; $$;
+create or replace function public.cf_leave_team()
+returns void language plpgsql security definer set search_path=public,auth as $$
+declare v_me uuid:=auth.uid(); v_team uuid; v_role text; v_count integer;
+begin
+  if v_me is null then raise exception 'Sign in first.'; end if;
+  select team_id,role into v_team,v_role from public.cf_team_members where user_id=v_me for update;
+  if v_team is null then raise exception 'You are not in a team.'; end if;
+  perform 1 from public.cf_teams where id=v_team for update;
+  select count(*) into v_count from public.cf_team_members where team_id=v_team;
+  if v_role='captain' and v_count>1 then raise exception 'Captain must transfer leadership before leaving.'; end if;
+  if v_role='captain' then delete from public.cf_teams where id=v_team;
+  else delete from public.cf_team_members where team_id=v_team and user_id=v_me; end if;
+end; $$;
+revoke all on function public.cf_create_team(text,text,text) from public,anon;
+revoke all on function public.cf_join_team(uuid) from public,anon;
+revoke all on function public.cf_leave_team() from public,anon;
+grant execute on function public.cf_create_team(text,text,text) to authenticated;
+grant execute on function public.cf_join_team(uuid) to authenticated;
+grant execute on function public.cf_leave_team() to authenticated;
