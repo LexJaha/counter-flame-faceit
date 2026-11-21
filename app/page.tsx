@@ -699,7 +699,7 @@ export default function Home() {
         </section>
       ) : (
         <div className="workspace">
-          <section className="main-panel">
+          <section key={view} className="main-panel liquid-page-transition">
             {view==="overview" && <>
               <div className="dashboard-topline">
                 <div><span className="eyebrow">COUNTERFLAME ARENA / SEASON 01</span><h2>WELCOME BACK, {(profile?.username||"PLAYER").toUpperCase()}</h2><p>Queue up. Play smart. Climb the ladder.</p></div>
