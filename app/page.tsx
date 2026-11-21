@@ -70,7 +70,12 @@ export default function Home() {
   const [tournamentMode, setTournamentMode] = useState("1v1");
   const [tournamentCapacity, setTournamentCapacity] = useState("8");
   const [tournamentScores, setTournamentScores] = useState<Record<string,{score1:string;score2:string}>>({});
-  const [isModerator, setIsModerator] = useState(false);\n  const [adminPlayers, setAdminPlayers] = useState<Profile[]>([]);\n  const [adminTargetId, setAdminTargetId] = useState("");\n  const [adminElo, setAdminElo] = useState("1000");\n  const [adminKills, setAdminKills] = useState("0");\n  const [adminDeaths, setAdminDeaths] = useState("0");
+  const [isModerator, setIsModerator] = useState(false);
+  const [adminPlayers, setAdminPlayers] = useState<Profile[]>([]);
+  const [adminTargetId, setAdminTargetId] = useState("");
+  const [adminElo, setAdminElo] = useState("1000");
+  const [adminKills, setAdminKills] = useState("0");
+  const [adminDeaths, setAdminDeaths] = useState("0");
   const [view, setView] = useState("overview");
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [email, setEmail] = useState("");
