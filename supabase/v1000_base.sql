@@ -5,7 +5,7 @@ create extension if not exists pgcrypto;
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   username text not null unique check(char_length(username) between 3 and 20),
-  elo integer not null default 1000 check(elo between 0 and 10000),
+  elo integer not null default 1000 check(elo between 0 and 9999999),
   matches_played integer not null default 0,
   wins integer not null default 0,
   losses integer not null default 0,
