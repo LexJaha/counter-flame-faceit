@@ -20,6 +20,8 @@ type TeamMember = { user_id: string; username: string; elo: number; role: string
 type TeamData = { id: string; name: string; tag: string; description: string; role: string; members: TeamMember[] };
 type TeamListing = { id: string; name: string; tag: string; description: string; member_count: number };
 type AppNotification = { id: string; kind: string; title: string; body: string; link: string; read_at: string | null; created_at: string };
+type TournamentMatch = { id: string; round_no: number; match_no: number; player1_id: string | null; player2_id: string | null; winner_id: string | null; score1: number | null; score2: number | null; status: string };
+type Tournament = { id: string; name: string; description: string; mode: string; max_players: number; status: string; created_by: string; created_at: string; entry_count: number; my_entry: boolean; matches: TournamentMatch[]; player_names: Record<string,string> };
 
 const modes = ["1v1", "2v2", "3v3", "4v4", "5v5"];
 const maps = ["Random", "Harbor", "Factory", "Outpost", "District"];
@@ -60,6 +62,11 @@ export default function Home() {
   const [teamTag, setTeamTag] = useState("");
   const [teamDescription, setTeamDescription] = useState("");
   const [appNotifications, setAppNotifications] = useState<AppNotification[]>([]);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [tournamentName, setTournamentName] = useState("");
+  const [tournamentDescription, setTournamentDescription] = useState("");
+  const [tournamentMode, setTournamentMode] = useState("1v1");
+  const [tournamentCapacity, setTournamentCapacity] = useState("8");
   const [isModerator, setIsModerator] = useState(false);
   const [view, setView] = useState("overview");
   const [email, setEmail] = useState("");
@@ -164,6 +171,26 @@ export default function Home() {
       .eq("status", "ready").order("created_at", { ascending: false }).limit(20);
     if (!error) setMatches((data || []) as Match[]);
   }, [user]);
+
+  const loadTournaments = useCallback(async () => {
+    if (!supabase || !user) return;
+    const { data: rows, error } = await supabase.from("cf_tournaments").select("*").order("created_at", { ascending: false }).limit(30);
+    if (error) { setNotice(error.message); return; }
+    const ids = (rows || []).map((item: any) => item.id);
+    if (!ids.length) { setTournaments([]); return; }
+    const [{ data: entries }, { data: matches }] = await Promise.all([
+      supabase.from("cf_tournament_entries").select("tournament_id,user_id").in("tournament_id", ids),
+      supabase.from("cf_tournament_matches").select("*").in("tournament_id", ids).order("round_no").order("match_no")
+    ]);
+    const playerIds = Array.from(new Set([...(entries || []).map((e: any) => e.user_id), ...(matches || []).flatMap((m: any) => [m.player1_id,m.player2_id,m.winner_id]).filter(Boolean)]));
+    const { data: people } = playerIds.length ? await supabase.from("profiles").select("id,username").in("id", playerIds) : { data: [] as any[] };
+    const names: Record<string,string> = {};
+    (people || []).forEach((p: any) => { names[p.id] = p.username; });
+    setTournaments((rows || []).map((t: any) => {
+      const ownEntries = (entries || []).filter((e: any) => e.tournament_id === t.id);
+      return { ...t, entry_count: ownEntries.length, my_entry: ownEntries.some((e: any) => e.user_id === user.id), matches: (matches || []).filter((m: any) => m.tournament_id === t.id), player_names: names };
+    }) as Tournament[]);
+  }, [user?.id]);
 
   const loadPendingResults = useCallback(async () => {
     if (!supabase || !isModerator) return;
@@ -302,6 +329,10 @@ export default function Home() {
   useEffect(() => {
     if (isModerator) void loadPendingResults();
   }, [isModerator, loadPendingResults]);
+
+  useEffect(() => {
+    if (view === "tournaments" && user) void loadTournaments();
+  }, [view, user?.id, loadTournaments]);
 
   async function authenticate() {
     if (!supabase) return;
@@ -498,6 +529,42 @@ export default function Home() {
     setBusy(false);
   }
 
+  async function createTournament() {
+    if (!supabase || !user) return;
+    setBusy(true);
+    const { error } = await supabase.from("cf_tournaments").insert({
+      name: tournamentName.trim(), description: tournamentDescription.trim(),
+      mode: tournamentMode, max_players: Number(tournamentCapacity), created_by: user.id
+    });
+    if (error) setNotice(error.message);
+    else { setTournamentName(""); setTournamentDescription(""); setNotice("Turnuva oluşturuldu. Oyuncular katılabilir."); await loadTournaments(); }
+    setBusy(false);
+  }
+
+  async function joinTournament(id: string) {
+    if (!supabase) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("cf_join_tournament", { p_tournament: id });
+    setNotice(error ? error.message : "Turnuvaya katıldın.");
+    await loadTournaments(); setBusy(false);
+  }
+
+  async function leaveTournament(id: string) {
+    if (!supabase) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("cf_leave_tournament", { p_tournament: id });
+    setNotice(error ? error.message : "Turnuvadan ayrıldın.");
+    await loadTournaments(); setBusy(false);
+  }
+
+  async function startTournament(id: string) {
+    if (!supabase) return;
+    setBusy(true);
+    const { error } = await supabase.rpc("cf_start_tournament", { p_tournament: id });
+    setNotice(error ? error.message : "Turnuva başladı. İlk tur eşleşmeleri hazır.");
+    await loadTournaments(); setBusy(false);
+  }
+
   async function reviewResult(matchId: string, approve: boolean) {
     if (!supabase) return;
     setBusy(true);
@@ -684,11 +751,31 @@ export default function Home() {
                 </div></div>
             </div>}
 
-            {["tournaments"].includes(view) && <div className="panel-card feature-placeholder">
-              <span className="tag-orange">ROADMAP MODULE</span>
-              <h2>{navItems.find(item=>item.id===view)?.label}</h2>
-              <p className="muted">Bu modüller için henüz üretim veritabanı tabloları ve güvenlik kuralları tamamlanmadı. Gerçek işlevler hazır olana kadar sahte içerik gösterilmiyor.</p>
-              <div className="placeholder-status"><span className="green-dot"/> DATABASE MODULE NOT DEPLOYED</div>
+            {view==="tournaments" && <div className="panel-card real-module">
+              <div className="section-heading"><div><span className="eyebrow">COMPETITIVE EVENTS</span><h2>TURNUVALAR</h2><p>Gerçek kayıtlar, oyuncu kontenjanı ve ilk tur eşleşmeleri.</p></div><Medal className="heading-icon"/></div>
+              <div className="team-create-form">
+                <span className="eyebrow">YENİ TURNUVA OLUŞTUR</span>
+                <input className="cf-input" value={tournamentName} onChange={e=>setTournamentName(e.target.value)} maxLength={48} placeholder="Turnuva adı (3–48 karakter)"/>
+                <textarea className="cf-input profile-bio-input" value={tournamentDescription} onChange={e=>setTournamentDescription(e.target.value)} maxLength={300} placeholder="Açıklama (isteğe bağlı)"/>
+                <div className="result-controls">
+                  <select className="cf-input" value={tournamentMode} onChange={e=>setTournamentMode(e.target.value)}>{modes.map(m=><option key={m}>{m}</option>)}</select>
+                  <select className="cf-input" value={tournamentCapacity} onChange={e=>setTournamentCapacity(e.target.value)}><option value="4">4 oyuncu</option><option value="8">8 oyuncu</option><option value="16">16 oyuncu</option><option value="32">32 oyuncu</option></select>
+                </div>
+                <button className="btn-primary" disabled={busy||tournamentName.trim().length<3} onClick={createTournament}>TURNUVA OLUŞTUR <Plus size={16}/></button>
+              </div>
+              <div className="section-heading sub-heading"><div><span className="eyebrow">LIVE REGISTRATION</span><h2>AÇIK TURNUVALAR</h2></div><button className="text-action" onClick={()=>void loadTournaments()}><RefreshCw size={14}/> YENİLE</button></div>
+              {tournaments.length===0 ? <div className="empty-list"><Medal size={22}/><b>Henüz turnuva yok</b><span>İlk turnuvayı sen oluşturabilirsin.</span></div> : <div className="team-directory">
+                {tournaments.map(t=><article className="panel-card" key={t.id} style={{marginBottom:10}}>
+                  <div className="card-top"><span className="tag-orange">{t.status.toUpperCase()}</span><span className="tag-muted">{t.mode} · {t.max_players} SLOT</span></div>
+                  <h3>{t.name}</h3><p className="muted small">{t.description || "CounterFlame community tournament"}</p>
+                  <div className="profile-record"><span>KATILIM <b>{t.entry_count}/{t.max_players}</b></span><span>MOD <b>{t.mode}</b></span><span>OLUŞTURAN <b>{t.created_by===user.id?"SEN":(t.player_names[t.created_by]||"Oyuncu")}</b></span></div>
+                  {t.status==="registration" && <div className="review-actions" style={{marginTop:12}}>
+                    {t.created_by===user.id ? <button className="btn-primary compact" disabled={busy||t.entry_count!==t.max_players} onClick={()=>startTournament(t.id)}>TURNUVAYI BAŞLAT</button> : t.my_entry ? <button className="btn-ghost compact" disabled={busy} onClick={()=>leaveTournament(t.id)}>AYRIL</button> : <button className="btn-primary compact" disabled={busy||t.entry_count>=t.max_players} onClick={()=>joinTournament(t.id)}>KATIL</button>}
+                    <span className="muted small">{t.entry_count===t.max_players?"Kontenjan doldu":`${t.max_players-t.entry_count} boş yer`}</span>
+                  </div>}
+                  {t.matches.length>0 && <div className="team-roster">{t.matches.map(m=><div className="team-roster-row" key={m.id}><span className="tag-orange">R{m.round_no} · M{m.match_no}</span><span><b>{m.player1_id?(t.player_names[m.player1_id]||"Oyuncu"):"TBD"} vs {m.player2_id?(t.player_names[m.player2_id]||"Oyuncu"):"TBD"}</b><small>{m.status==="completed"?`SONUÇ ${m.score1} : ${m.score2}`:"MAÇ BEKLİYOR"}</small></span></div>)}</div>}
+                </article>)}
+              </div>}
             </div>}
 
             {isModerator && <section className="moderator-panel"><div className="section-heading"><div><span className="eyebrow">STAFF TOOLS</span><h2>RESULT REVIEW QUEUE</h2></div><ShieldCheck className="heading-icon"/></div>{pendingResults.length===0?<p className="muted">No pending match results.</p>:pendingResults.map(item=><div className="review-row" key={item.match_id}><div><b>{item.score1} : {item.score2}</b><span>Winner: Team {item.winner_team} · {new Date(item.created_at).toLocaleString("tr-TR")}</span><small>{item.match_id.slice(0,8)}…</small></div><div className="review-actions"><button className="btn-ghost compact" disabled={busy} onClick={()=>reviewResult(item.match_id,false)}>REJECT</button><button className="btn-primary compact" disabled={busy} onClick={()=>reviewResult(item.match_id,true)}><CheckCircle2 size={14}/> APPROVE</button></div></div>)}</section>}
