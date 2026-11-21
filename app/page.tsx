@@ -747,8 +747,8 @@ export default function Home() {
   async function saveAdminStats() {
     if (!adminUnlocked || !adminTargetId) return;
     const eloValue = Number(adminElo), killsValue = Number(adminKills), deathsValue = Number(adminDeaths);
-    if (![eloValue,killsValue,deathsValue].every(Number.isInteger) || eloValue < 0 || eloValue > 10000 || killsValue < 0 || deathsValue < 0 || killsValue > 999999 || deathsValue > 999999) {
-      setNotice("ELO 0–10000, K/D ise 0–999999 aralığında tam sayı olmalı."); return;
+    if (![eloValue,killsValue,deathsValue].every(Number.isInteger) || eloValue < 0 || eloValue > 999999 || killsValue < 0 || deathsValue < 0 || killsValue > 999999 || deathsValue > 999999) {
+      setNotice("ELO 0–999999, K/D ise 0–999999 aralığında tam sayı olmalı."); return;
     }
     setBusy(true);
     try {
@@ -972,7 +972,7 @@ export default function Home() {
                   {adminPlayers.map(p=><option key={p.id} value={p.id}>{p.username} · {p.elo} ELO</option>)}
                 </select>
                 <div className="admin-edit-grid">
-                  <label><span>ELO PUANI</span><input className="cf-input" type="number" min="0" max="10000" value={adminElo} onChange={e=>setAdminElo(e.target.value)}/></label>
+                  <label><span>ELO PUANI</span><input className="cf-input" type="number" min="0" max="999999" value={adminElo} onChange={e=>setAdminElo(e.target.value)}/></label>
                   <label><span>KILLS</span><input className="cf-input" type="number" min="0" max="999999" value={adminKills} onChange={e=>setAdminKills(e.target.value)}/></label>
                   <label><span>DEATHS</span><input className="cf-input" type="number" min="0" max="999999" value={adminDeaths} onChange={e=>setAdminDeaths(e.target.value)}/></label>
                   <div className="admin-kd-preview"><small>K/D ORANI</small><b>{Number(adminDeaths)>0?(Number(adminKills)/Number(adminDeaths)).toFixed(2):Number(adminKills)>0?"∞":"0.00"}</b></div>
