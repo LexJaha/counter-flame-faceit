@@ -303,23 +303,43 @@ export default function Home() {
       </header>
 
       <aside className="global-sidebar">
-        <div className="side-label">COUNTERFLAME MENU</div>
-        {["ANA MENÜ","OYNA","REKABET","SOSYAL","HESAP"].map(group => (
-          <div key={group}>
-            <div className="side-label side-group">{group}</div>
-            {navItems.filter(item=>item.group===group).map(item=>(
+        <div className="menu-brand">
+          <span className="menu-brand-icon"><Flame size={18}/></span>
+          <span><b>CF <em>ARENA</em></b><small>CONTROL CENTER</small></span>
+          <span className="menu-live"><i/> LIVE</span>
+        </div>
+        <div className="menu-caption">NAVIGATION</div>
+        {[
+          {name:"OVERVIEW", title:"GENEL BAKIŞ", hint:"Ana kontrol merkezi"},
+          {name:"PLAY", title:"OYUN", hint:"Eşleş ve odaya katıl"},
+          {name:"COMPETE", title:"REKABET", hint:"Sıralama ve organizasyon"},
+          {name:"COMMUNITY", title:"TOPLULUK", hint:"Sosyal alanlar"},
+          {name:"ACCOUNT", title:"OYUNCU", hint:"Profil ve tercihler"}
+        ].map(section => {
+          const groupItems = navItems.filter(item =>
+            section.name==="OVERVIEW" ? item.group==="ANA MENÜ" :
+            section.name==="PLAY" ? item.group==="OYNA" :
+            section.name==="COMPETE" ? item.group==="REKABET" :
+            section.name==="COMMUNITY" ? item.group==="SOSYAL" : item.group==="HESAP"
+          );
+          return <div className="menu-section" key={section.name}>
+            <div className="menu-section-heading"><span>{section.title}</span><small>{String(groupItems.length).padStart(2,"0")}</small></div>
+            {groupItems.map((item,index)=>(
               <button key={item.id} className={view===item.id?"nav-link active":"nav-link"} onClick={()=>setView(item.id)}>
-                <item.icon size={17}/><span>{item.label}</span>{view===item.id&&<ChevronRight size={14}/>}
+                <span className="nav-icon"><item.icon size={16}/></span>
+                <span className="nav-copy"><b>{item.label}</b><small>{item.id==="overview"?"Platform özeti":item.id==="matchmaking"?"Yeni maç bul":item.id==="room"?"Kodla odaya gir":item.id==="leaderboard"?"En iyi oyuncular":item.id==="teams"?"Kadronu yönet":item.id==="tournaments"?"Etkinlik takvimi":item.id==="messages"?"Sohbet kutusu":item.id==="notifications"?"Son aktiviteler":item.id==="profile"?"İstatistiklerin":"Hesap tercihleri"}</small></span>
+                {view===item.id?<span className="nav-current"><i/></span>:<span className="nav-index">{String(index+1).padStart(2,"0")}</span>}
               </button>
             ))}
-          </div>
-        ))}
+          </div>;
+        })}
+        <div className="menu-spacer"/>
         <div className="global-player">
           <div className="player-avatar">{(profile?.username||user?.email||"P").slice(0,1).toUpperCase()}</div>
-          <b>{profile?.username || (user ? "Oyuncu" : "Misafir")}</b>
-          <span className="rank-label">{user ? `RATING · ${profile?.elo ?? 1000} ELO` : "GİRİŞ YAPILMADI"}</span>
+          <div className="player-meta"><b>{profile?.username || (user ? "Oyuncu" : "Misafir")}</b><span className="rank-label">{user ? `RATING · ${profile?.elo ?? 1000} ELO` : "GİRİŞ YAPILMADI"}</span></div>
+          <span className="player-status"><i/></span>
         </div>
-        <div className="sidebar-bottom"><span className="green-dot"/> COUNTERFLAME · V10000</div>
+        <div className="sidebar-bottom"><span className="green-dot"/> COUNTERFLAME <b>V10000</b><small>BUILT FOR COMPETITIVE PLAY</small></div>
       </aside>
 
       {notice && <div className="notice"><span>{notice}</span><button onClick={() => setNotice("")}><X size={16}/></button></div>}
