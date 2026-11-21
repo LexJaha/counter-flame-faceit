@@ -256,6 +256,35 @@ export default function Home() {
     return () => { void supabase?.removeChannel(channel); };
   }, [user?.id, loadMatch]);
 
+  // Keep matchmaking alive: retry the idempotent queue RPC while waiting.
+  // This lets an already-waiting player complete a match as soon as enough real players arrive.
+  useEffect(() => {
+    if (!user || !supabase || queueState !== "waiting") return;
+    let checking = false;
+    const checkQueue = async () => {
+      if (checking) return;
+      checking = true;
+      try {
+        const { data, error } = await supabase.rpc("cf_join_matchmaking", { p_mode: mode });
+        if (error) throw error;
+        if (data?.status === "matched" && data.match_id) {
+          setQueueState("");
+          setNotice("Match found. Your room is ready.");
+          setView("room");
+          await loadMatch(data.match_id);
+        } else if (data?.status === "waiting") {
+          setNotice(`Searching for real players: ${data.players_found ?? 1}/${data.players_needed ?? 2}. ELO range ±${data.elo_range ?? 150}.`);
+        }
+      } catch (error: any) {
+        setNotice(error.message || "Matchmaking connection interrupted. Retrying…");
+      } finally {
+        checking = false;
+      }
+    };
+    const timer = window.setInterval(() => { void checkQueue(); }, 4000);
+    return () => window.clearInterval(timer);
+  }, [user?.id, queueState, mode, loadMatch]);
+
   useEffect(() => {
     if (!activeMatch || !supabase) return;
     const channel = supabase.channel("cf-room-" + activeMatch.id)
