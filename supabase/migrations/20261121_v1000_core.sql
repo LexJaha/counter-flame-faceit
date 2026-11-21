@@ -196,3 +196,48 @@ begin
   if not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='cf_match_results') then alter publication supabase_realtime add table public.cf_match_results; end if;
   if not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='cf_match_messages') then alter publication supabase_realtime add table public.cf_match_messages; end if;
 end $$;
+
+
+-- Rating updates are allowed only inside the moderator review transaction.
+create or replace function public.cf_guard_profile_stats()
+returns trigger language plpgsql set search_path=public,auth as $$
+begin
+  if current_setting('cf.internal_rating_update',true)='on' then return new; end if;
+  if auth.uid() is not null then
+    if tg_op='INSERT' then
+      new.elo:=1000; new.wins:=0; new.losses:=0; new.matches_played:=0;
+    else
+      new.elo:=old.elo; new.wins:=old.wins; new.losses:=old.losses; new.matches_played:=old.matches_played;
+    end if;
+  end if;
+  return new;
+end; $$;
+
+create or replace function public.cf_review_result(p_match uuid,p_approve boolean,p_note text default '')
+returns void language plpgsql security definer set search_path=public,private,auth as $$
+declare v_result public.cf_match_results%rowtype;
+begin
+  if auth.uid() is null or not exists(select 1 from private.cf_moderators where user_id=auth.uid()) then
+    raise exception 'Moderator access required.';
+  end if;
+  select * into v_result from public.cf_match_results where match_id=p_match for update;
+  if not found or v_result.status<>'pending' then raise exception 'No pending result found.'; end if;
+  if p_approve then
+    insert into public.cf_verified_results(match_id,winner_team,confidence,summary)
+    values(p_match,v_result.winner_team,1,coalesce(nullif(trim(p_note),''),'Moderator approved evidence'))
+    on conflict(match_id) do update set winner_team=excluded.winner_team,confidence=1,summary=excluded.summary,created_at=now();
+    perform set_config('cf.internal_rating_update','on',true);
+    update public.profiles p set wins=coalesce(p.wins,0)+1,matches_played=coalesce(p.matches_played,0)+1,
+      elo=least(10000,coalesce(p.elo,1000)+25),updated_at=now()
+    from public.cf_match_players mp where mp.match_id=p_match and mp.user_id=p.id and mp.team_no=v_result.winner_team;
+    update public.profiles p set losses=coalesce(p.losses,0)+1,matches_played=coalesce(p.matches_played,0)+1,
+      elo=greatest(0,coalesce(p.elo,1000)-25),updated_at=now()
+    from public.cf_match_players mp where mp.match_id=p_match and mp.user_id=p.id and mp.team_no<>v_result.winner_team;
+    update public.cf_matches set status='completed' where id=p_match;
+    update public.cf_match_results set status='approved',reviewed_by=auth.uid(),reviewed_at=now(),
+      review_note=left(coalesce(p_note,''),500) where match_id=p_match;
+  else
+    update public.cf_match_results set status='rejected',reviewed_by=auth.uid(),reviewed_at=now(),
+      review_note=left(coalesce(p_note,''),500) where match_id=p_match;
+  end if;
+end; $$;
