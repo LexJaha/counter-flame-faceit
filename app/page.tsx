@@ -657,7 +657,7 @@ export default function Home() {
           <div className="player-meta"><b>{profile?.username || (user ? "Oyuncu" : "Misafir")}</b><span className="rank-label">{user ? `RATING · ${profile?.elo ?? 1000} ELO` : "GİRİŞ YAPILMADI"}</span></div>
           <span className="player-status"><i/></span>
         </div>
-        <div className="sidebar-bottom"><span className="green-dot"/> COUNTERFLAME <b>V10000</b><small>BUILT FOR COMPETITIVE PLAY</small></div>
+        <div className="sidebar-bottom"><span className="green-dot"/> COUNTERFLAME <b>V6</b><small>BUILT FOR COMPETITIVE PLAY</small></div>
       </aside>
 
       {notice && <div className="notice"><span>{notice}</span><button onClick={() => setNotice("")}><X size={16}/></button></div>}
@@ -781,7 +781,7 @@ export default function Home() {
                 <input className="cf-input" value={tournamentName} onChange={e=>setTournamentName(e.target.value)} maxLength={48} placeholder="Turnuva adı (3–48 karakter)"/>
                 <textarea className="cf-input profile-bio-input" value={tournamentDescription} onChange={e=>setTournamentDescription(e.target.value)} maxLength={300} placeholder="Açıklama (isteğe bağlı)"/>
                 <div className="result-controls">
-                  <select className="cf-input" value={tournamentMode} onChange={e=>setTournamentMode(e.target.value)}>{modes.map(m=><option key={m}>{m}</option>)}</select>
+                  <select className="cf-input" value={tournamentMode} onChange={e=>setTournamentMode(e.target.value)}><option value="1v1">1v1 · Bireysel</option></select>
                   <select className="cf-input" value={tournamentCapacity} onChange={e=>setTournamentCapacity(e.target.value)}><option value="4">4 oyuncu</option><option value="8">8 oyuncu</option><option value="16">16 oyuncu</option><option value="32">32 oyuncu</option></select>
                 </div>
                 <button className="btn-primary" disabled={busy||tournamentName.trim().length<3} onClick={createTournament}>TURNUVA OLUŞTUR <Plus size={16}/></button>
@@ -810,7 +810,7 @@ export default function Home() {
 
       </div>
 
-      <footer className="footer"><span>COUNTERFLAME <b>FACEIT</b> · V1000 DEVELOPMENT TRACK</span><span>COMMUNITY PROJECT · NOT AFFILIATED WITH ANY GAME PUBLISHER</span></footer>
+      <footer className="footer"><span>COUNTERFLAME <b>FACEIT</b> · V6 DEVELOPMENT TRACK</span><span>COMMUNITY PROJECT · NOT AFFILIATED WITH ANY GAME PUBLISHER</span></footer>
     </main>
   );
 }
