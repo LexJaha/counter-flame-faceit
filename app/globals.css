@@ -833,3 +833,22 @@ body{background-color:#07090d;background-image:radial-gradient(ellipse at 72% 0%
 @media(prefers-reduced-motion:reduce){
   .mobile-dock,.mobile-more-panel{backdrop-filter:none}
 }
+
+
+/* Liquid-glass navigation transitions */
+.liquid-page-transition{animation:cf-liquid-enter .48s cubic-bezier(.2,.8,.2,1) both;transform-origin:50% 12%;will-change:opacity,transform,filter}
+@keyframes cf-liquid-enter{
+  0%{opacity:0;transform:translate3d(0,15px,0) scale(.985);filter:blur(9px)}
+  55%{opacity:1;filter:blur(1.5px)}
+  100%{opacity:1;transform:translate3d(0,0,0) scale(1);filter:blur(0)}
+}
+.nav-link,.mobile-dock-item,.mobile-more-link,.btn-primary,.btn-ghost{transition:background .25s ease,border-color .25s ease,color .25s ease,transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s ease}
+.nav-link:active,.mobile-dock-item:active,.mobile-more-link:active,.btn-primary:active,.btn-ghost:active{transform:scale(.965)}
+.mobile-dock{isolation:isolate;overflow:hidden;border-color:rgba(255,255,255,.17)!important;background:linear-gradient(135deg,rgba(34,42,54,.78),rgba(12,16,23,.82))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 14px 42px rgba(0,0,0,.48)!important}
+.mobile-dock:before{content:"";position:absolute;z-index:-1;inset:0;border-radius:inherit;background:linear-gradient(115deg,rgba(255,255,255,.12),transparent 34%,rgba(255,132,80,.08) 72%,transparent);pointer-events:none}
+.mobile-dock-item{position:relative;overflow:hidden}
+.mobile-dock-item.active{background:linear-gradient(145deg,rgba(255,137,86,.24),rgba(255,113,56,.08))!important;border-color:rgba(255,155,112,.32)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 20px rgba(255,113,56,.09)}
+.mobile-dock-item.active:after{content:"";position:absolute;top:3px;left:22%;right:22%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,190,157,.9),transparent)}
+.mobile-more-panel{animation:cf-glass-pop .24s cubic-bezier(.18,.8,.25,1) both;border-color:rgba(255,255,255,.17)!important;background:linear-gradient(145deg,rgba(32,40,52,.94),rgba(11,15,22,.96))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 20px 60px rgba(0,0,0,.58)!important}
+@keyframes cf-glass-pop{from{opacity:0;transform:translateY(12px) scale(.96);filter:blur(7px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+@media(prefers-reduced-motion:reduce){.liquid-page-transition,.mobile-more-panel{animation:none!important}.nav-link,.mobile-dock-item,.mobile-more-link,.btn-primary,.btn-ghost{transition:none!important}}
