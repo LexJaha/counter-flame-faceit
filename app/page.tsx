@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-type Profile = { id: string; username: string; elo: number; wins: number; losses: number; matches_played: number; bio?: string | null };
+type Profile = { id: string; username: string; elo: number; wins: number; losses: number; matches_played: number; kills?: number; deaths?: number; bio?: string | null };
 type Match = { id: string; code: string; mode: string; map: string; status: string; created_at: string; created_by?: string | null };
 type Player = { user_id: string; team_no: number; username: string; elo: number };
 type ChatMessage = { id: string; match_id: string; sender_id: string; body: string; created_at: string };
@@ -37,6 +37,7 @@ const navItems = [
   { id: "ai-analysis", label: "AI Maç Analizi", icon: BrainCircuit, group: "ARAÇLAR" },
   { id: "profile", label: "Oyuncu Profili", icon: Activity, group: "HESAP" },
   { id: "settings", label: "Ayarlar", icon: ShieldCheck, group: "HESAP" },
+  { id: "admin", label: "Admin Paneli", icon: ShieldCheck, group: "HESAP" },
 ];
 
 export default function Home() {
@@ -69,7 +70,7 @@ export default function Home() {
   const [tournamentMode, setTournamentMode] = useState("1v1");
   const [tournamentCapacity, setTournamentCapacity] = useState("8");
   const [tournamentScores, setTournamentScores] = useState<Record<string,{score1:string;score2:string}>>({});
-  const [isModerator, setIsModerator] = useState(false);
+  const [isModerator, setIsModerator] = useState(false);\n  const [adminPlayers, setAdminPlayers] = useState<Profile[]>([]);\n  const [adminTargetId, setAdminTargetId] = useState("");\n  const [adminElo, setAdminElo] = useState("1000");\n  const [adminKills, setAdminKills] = useState("0");\n  const [adminDeaths, setAdminDeaths] = useState("0");
   const [view, setView] = useState("overview");
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -159,7 +160,7 @@ export default function Home() {
     })));
   }, [user]);
 
-  const loadLeaderboard = useCallback(async () => {
+  const loadAdminPlayers = useCallback(async () => {\n    if (!supabase || !isModerator) return;\n    const { data, error } = await supabase.from("profiles").select("id,username,elo,wins,losses,matches_played,kills,deaths").order("elo", { ascending: false }).limit(250);\n    if (error) { setNotice(error.message); return; }\n    const rows = (data || []) as Profile[];\n    setAdminPlayers(rows);\n    const selected = rows.find(row => row.id === adminTargetId) || rows.find(row => row.id === user?.id) || rows[0];\n    if (selected) { setAdminTargetId(selected.id); setAdminElo(String(selected.elo)); setAdminKills(String(selected.kills ?? 0)); setAdminDeaths(String(selected.deaths ?? 0)); }\n  }, [isModerator, adminTargetId, user?.id]);\n\n  const loadLeaderboard = useCallback(async () => {
     if (!supabase) return;
     const { data, error } = await supabase.from("profiles")
       .select("id,username,elo,wins,losses,matches_played")
@@ -599,6 +600,26 @@ export default function Home() {
     setBusy(false);
   }
 
+  async function saveAdminStats() {
+    if (!supabase || !isModerator || !adminTargetId) return;
+    const eloValue = Number(adminElo), killsValue = Number(adminKills), deathsValue = Number(adminDeaths);
+    if (![eloValue,killsValue,deathsValue].every(Number.isInteger) || eloValue < 0 || eloValue > 10000 || killsValue < 0 || deathsValue < 0 || killsValue > 999999 || deathsValue > 999999) {
+      setNotice("ELO 0–10000, K/D ise 0–999999 aralığında tam sayı olmalı."); return;
+    }
+    setBusy(true);
+    const { data, error } = await supabase.rpc("cf_admin_update_player_stats", {
+      p_user_id: adminTargetId, p_elo: eloValue, p_kills: killsValue, p_deaths: deathsValue
+    });
+    if (error) setNotice(error.message);
+    else {
+      setNotice("Oyuncu istatistikleri güncellendi.");
+      setAdminPlayers(old => old.map(row => row.id === adminTargetId ? { ...row, elo: data.elo, kills: data.kills, deaths: data.deaths } : row));
+      if (adminTargetId === user.id) await loadProfile(user.id);
+      await loadLeaderboard();
+    }
+    setBusy(false);
+  }
+
   async function signOut() {
     await supabase?.auth.signOut();
     setActiveMatch(null); setView("overview"); setQueueState("");
@@ -615,7 +636,7 @@ export default function Home() {
   return (
     <main className="cf-shell">
       <header className="topbar">
-        <a className="brand" href="#"><span className="brand-mark"><Flame size={22}/></span><span><b>COUNTERFLAME <em>FACEIT</em></b><small>COMPETITIVE COMMUNITY PLATFORM</small></span></a>
+        <a className="brand" href="#"><span className="brand-mark"><Flame size={22}/></span><span><b>COUNTERFLAME <em>FACEIT</em> <span className="brand-version">v1.0.0</span></b><small>COMPETITIVE COMMUNITY PLATFORM</small></span></a>
         <div className="top-actions">
           <span className="season-pill"><span/> SEASON 01 · BETA</span>
           {user ? <><span className="user-chip"><span className="avatar">{(profile?.username || user.email || "P").slice(0,1).toUpperCase()}</span><b>{profile?.username || user.email}</b></span><button className="icon-btn" onClick={signOut} title="Sign out"><LogOut size={17}/></button></> : <span className="online-pill">SYSTEM ONLINE</span>}
@@ -636,7 +657,7 @@ export default function Home() {
           {name:"COMMUNITY", title:"TOPLULUK", hint:"Sosyal alanlar"},
           {name:"ACCOUNT", title:"OYUNCU", hint:"Profil ve tercihler"}
         ].map(section => {
-          const groupItems = navItems.filter(item =>
+          const groupItems = navItems.filter(item => (item.id !== "admin" || isModerator) && (
             section.name==="OVERVIEW" ? item.group==="ANA MENÜ" :
             section.name==="PLAY" ? item.group==="OYNA" :
             section.name==="COMPETE" ? item.group==="REKABET" :
@@ -647,7 +668,7 @@ export default function Home() {
             {groupItems.map((item,index)=>(
               <button key={item.id} className={view===item.id?"nav-link active":"nav-link"} onClick={()=>setView(item.id)}>
                 <span className="nav-icon"><item.icon size={16}/></span>
-                <span className="nav-copy"><b>{item.label}</b><small>{item.id==="overview"?"Platform özeti":item.id==="matchmaking"?"Yeni maç bul":item.id==="room"?"Kodla odaya gir":item.id==="leaderboard"?"En iyi oyuncular":item.id==="teams"?"Kadronu yönet":item.id==="tournaments"?"Etkinlik takvimi":item.id==="messages"?"Sohbet kutusu":item.id==="notifications"?"Son aktiviteler":item.id==="ai-analysis"?"Ekran görüntüsü inceleme":item.id==="profile"?"İstatistiklerin":"Hesap tercihleri"}</small></span>
+                <span className="nav-copy"><b>{item.label}</b><small>{item.id==="overview"?"Platform özeti":item.id==="matchmaking"?"Yeni maç bul":item.id==="room"?"Kodla odaya gir":item.id==="leaderboard"?"En iyi oyuncular":item.id==="teams"?"Kadronu yönet":item.id==="tournaments"?"Etkinlik takvimi":item.id==="messages"?"Sohbet kutusu":item.id==="notifications"?"Son aktiviteler":item.id==="ai-analysis"?"Ekran görüntüsü inceleme":item.id==="profile"?"İstatistiklerin":item.id==="admin"?"Yetkili yönetimi":"Hesap tercihleri"}</small></span>
                 {view===item.id?<span className="nav-current"><i/></span>:<span className="nav-index">{String(index+1).padStart(2,"0")}</span>}
               </button>
             ))}
@@ -752,7 +773,7 @@ export default function Home() {
 
 
             {view==="teams" && <div className="panel-card real-module">
-              <div className="section-heading"><div><span className="eyebrow">SQUAD MANAGEMENT</span><h2>TEAMS</h2><p>Gerçek takım kayıtları ve üye listeleri.</p></div><Users className="heading-icon"/></div>
+              <div className="section-heading"><div><span className="eyebrow">OYUNCU KADROSU</span><h2>TAKIMLAR</h2><p>Arkadaşlarınla kalıcı bir oyuncu kadrosu kur. Takım kurmak eşleşmeye katılmak için zorunlu değil.</p></div><Users className="heading-icon"/></div>
               {myTeam ? <>
                 <div className="team-identity"><div className="team-tag">{myTeam.tag}</div><div><b>{myTeam.name}</b><small>{myTeam.description || "No team description"} · {myTeam.members.length}/5 PLAYERS</small></div><span className="tag-orange">{myTeam.role.toUpperCase()}</span></div>
                 <div className="team-roster">{myTeam.members.map(member=><div className="team-roster-row" key={member.user_id}><span className="profile-mini-avatar">{member.username.slice(0,1).toUpperCase()}</span><span><b>{member.username}</b><small>{member.elo} ELO</small></span><span className={member.role==="captain"?"tag-orange":"tag-muted"}>{member.role.toUpperCase()}</span></div>)}</div>
@@ -779,9 +800,31 @@ export default function Home() {
               <div className="settings-row"><div><b>Signed-in account</b><small>{user.email}</small></div><span className="tag-muted">AUTHENTICATED</span></div>
               <div className="settings-row"><div><b>Database protection</b><small>Supabase Row Level Security is active on player and match data.</small></div><span className="tag-orange">RLS ON</span></div>
               <div className="settings-row"><div><b>Change password</b><small>Send a secure password reset link to your account email.</small></div><button className="btn-ghost compact" onClick={async()=>{const {error}=await supabase!.auth.resetPasswordForEmail(user.email!);setNotice(error?error.message:"Password reset email requested.");}}>SEND RESET</button></div>
+              {isModerator ? <div className="admin-settings-entry"><div className="admin-entry-icon"><ShieldCheck size={19}/></div><div><b>ADMIN PANELİ</b><small>ELO ve oyuncu istatistiklerini yönet.</small></div><button className="btn-primary compact" onClick={()=>setView("admin")}>AÇ <ChevronRight size={14}/></button></div> : <div className="settings-row"><div><b>Yönetici araçları</b><small>Admin paneli yalnızca yetkilendirilmiş hesaplarda görünür.</small></div><span className="tag-muted">KİLİTLİ</span></div>}
               <button className="btn-ghost" onClick={signOut}><LogOut size={15}/> SIGN OUT</button>
             </div>}
 
+            {view==="admin" && <div className="panel-card real-module admin-page">
+              <div className="section-heading"><div><span className="eyebrow">COUNTERFLAME CONTROL</span><h2>ADMIN PANELİ</h2><p>Kendi hesabın dahil oyuncuların ELO ve K/D istatistiklerini yönet.</p></div><ShieldCheck className="heading-icon"/></div>
+              {!isModerator ? <div className="empty-list"><ShieldCheck size={24}/><b>Yetki gerekli</b><span>Bu alan yalnızca CounterFlame yöneticilerine açıktır.</span></div> : <>
+                <div className="admin-warning"><ShieldCheck size={17}/><span>Yönetici işlemleri sunucu tarafında yetki kontrolünden geçer. Herkes bu değerleri değiştiremez.</span></div>
+                <div className="admin-stat-strip"><div><small>OYUNCU SAYISI</small><b>{adminPlayers.length}</b></div><div><small>SEÇİLİ HESAP</small><b>{adminPlayers.find(p=>p.id===adminTargetId)?.username || "—"}</b></div><div><small>YETKİ</small><b>ADMIN</b></div></div>
+                <label className="field-label">OYUNCU SEÇ · KENDİNİ DE SEÇEBİLİRSİN</label>
+                <select className="cf-input admin-select" value={adminTargetId} onChange={e=>{const id=e.target.value;const p=adminPlayers.find(row=>row.id===id);setAdminTargetId(id);if(p){setAdminElo(String(p.elo));setAdminKills(String(p.kills??0));setAdminDeaths(String(p.deaths??0));}}}>
+                  {adminPlayers.map(p=><option key={p.id} value={p.id}>{p.username} · {p.elo} ELO</option>)}
+                </select>
+                <div className="admin-edit-grid">
+                  <label><span>ELO PUANI</span><input className="cf-input" type="number" min="0" max="10000" value={adminElo} onChange={e=>setAdminElo(e.target.value)}/></label>
+                  <label><span>KILLS</span><input className="cf-input" type="number" min="0" max="999999" value={adminKills} onChange={e=>setAdminKills(e.target.value)}/></label>
+                  <label><span>DEATHS</span><input className="cf-input" type="number" min="0" max="999999" value={adminDeaths} onChange={e=>setAdminDeaths(e.target.value)}/></label>
+                  <div className="admin-kd-preview"><small>K/D ORANI</small><b>{Number(adminDeaths)>0?(Number(adminKills)/Number(adminDeaths)).toFixed(2):Number(adminKills)>0?"∞":"0.00"}</b></div>
+                </div>
+                <button className="btn-primary full" disabled={busy||!adminTargetId} onClick={saveAdminStats}>İSTATİSTİKLERİ KAYDET <CheckCircle2 size={16}/></button>
+                <div className="admin-player-list"><div className="card-top"><b>OYUNCU LİSTESİ</b><button className="text-action" onClick={()=>void loadAdminPlayers()}><RefreshCw size={14}/> YENİLE</button></div>
+                  {adminPlayers.map(p=><button key={p.id} className={adminTargetId===p.id?"admin-player-row selected":"admin-player-row"} onClick={()=>{setAdminTargetId(p.id);setAdminElo(String(p.elo));setAdminKills(String(p.kills??0));setAdminDeaths(String(p.deaths??0));}}><span><b>{p.username}{p.id===user.id?" · SEN":""}</b><small>{p.wins}G / {p.losses}M · {p.matches_played} maç · K/D {p.kills??0}/{p.deaths??0}</small></span><strong>{p.elo.toLocaleString()} ELO</strong></button>)}
+                </div>
+              </>}
+            </div>}
             {view==="notifications" && <div className="panel-card real-module">
               <div className="section-heading"><div><span className="eyebrow">ACCOUNT ACTIVITY</span><h2>BİLDİRİMLER</h2><p>Mesajlar, takım hareketleri ve maç kararları.</p></div><Bell className="heading-icon"/></div>
               <div className="notification-toolbar"><span>{appNotifications.filter(item=>!item.read_at).length} UNREAD</span><button className="btn-ghost compact" disabled={!appNotifications.some(item=>!item.read_at)} onClick={markNotificationsRead}>MARK ALL READ <CheckCircle2 size={14}/></button></div>
@@ -857,6 +900,6 @@ function MatchRoom({match,players,messages,userId,draft,setDraft,onSend}:{
   match:Match;players:Player[];messages:ChatMessage[];userId:string;draft:string;setDraft:(v:string)=>void;onSend:(e:FormEvent)=>void;
 }) {
   return <><div className="section-heading"><div><span className="eyebrow">LIVE MATCH SPACE</span><h2>MAÇ ODASI</h2><p>Takım kadroları ve maç sohbeti. Kanıt yükleme ayrı AI Analiz bölümünde.</p></div><span className="tag-orange">{match.status.toUpperCase()}</span></div>
-    <div className="room-grid"><div className="panel-card room-main"><div className="room-meta"><div><small>OYUN MODU</small><b>{match.mode}</b></div><div><small>HARİTA</small><b>{match.map}</b></div><div><small>OYUNCULAR</small><b>{players.length} / {Number(match.mode[0])*2}</b></div></div><div className="teams"><div><span className="team-title">TEAM 01</span>{players.filter(p=>p.team_no===1).map(p=><div className="team-player" key={p.user_id}><span className="player-dot"/><b>{p.username}{p.user_id===userId?" (SEN)":""}</b><small>{p.elo} ELO</small></div>)}</div><div><span className="team-title team-two">TEAM 02</span>{players.filter(p=>p.team_no===2).map(p=><div className="team-player" key={p.user_id}><span className="player-dot alt"/><b>{p.username}{p.user_id===userId?" (SEN)":""}</b><small>{p.elo} ELO</small></div>)}</div></div><div className="room-ai-link"><BrainCircuit size={18}/><div><b>Maç kanıtı mı ekleyeceksin?</b><small>AI Maç Analizi bölümünden ekran görüntüsü yükleyebilirsin.</small></div></div></div>
+    <div className="room-grid"><div className="panel-card room-main"><div className="room-meta"><div><small>OYUN MODU</small><b>{match.mode}</b></div><div><small>HARİTA</small><b>{match.map}</b></div><div><small>OYUNCULAR</small><b>{players.length} / {Number(match.mode[0])*2}</b></div></div><div className="teams"><div><span className="team-title">1. TARAF · MAVİ</span>{players.filter(p=>p.team_no===1).map(p=><div className="team-player" key={p.user_id}><span className="player-dot"/><b>{p.username}{p.user_id===userId?" (SEN)":""}</b><small>{p.elo} ELO</small></div>)}</div><div><span className="team-title team-two">2. TARAF · TURUNCU</span>{players.filter(p=>p.team_no===2).map(p=><div className="team-player" key={p.user_id}><span className="player-dot alt"/><b>{p.username}{p.user_id===userId?" (SEN)":""}</b><small>{p.elo} ELO</small></div>)}</div></div><p className="room-side-note">Bunlar yalnızca bu maçın iki tarafıdır. Takımlar menüsü ise kalıcı oyuncu kadrosu kurmak içindir.</p><div className="room-ai-link"><BrainCircuit size={18}/><div><b>Maç kanıtı mı ekleyeceksin?</b><small>AI Maç Analizi bölümünden ekran görüntüsü yükleyebilirsin.</small></div></div></div>
       <div className="panel-card chat-card"><div className="card-top"><div><span className="eyebrow">TAKIM İLETİŞİMİ</span><h3>MAÇ SOHBETİ</h3></div><MessageSquare size={19}/></div><div className="chat-messages">{messages.length===0?<div className="chat-empty">Henüz mesaj yok.<br/>Sohbeti başlat.</div>:messages.map(message=><div className={message.sender_id===userId?"chat-message mine":"chat-message"} key={message.id}><small>{message.sender_id===userId?"SEN":"OYUNCU"} · {new Date(message.created_at).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})}</small><p>{message.body}</p></div>)}</div><form className="chat-form" onSubmit={onSend}><input className="cf-input" value={draft} onChange={e=>setDraft(e.target.value)} maxLength={1000} placeholder="Mesaj yaz…"/><button className="btn-primary send-btn" disabled={!draft.trim()}><Send size={16}/></button></form></div></div></>;
 }
