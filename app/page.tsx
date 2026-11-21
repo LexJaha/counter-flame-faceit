@@ -18,10 +18,16 @@ type PendingResult = { match_id: string; winner_team: number; score1: number; sc
 const modes = ["1v1", "2v2", "3v3", "4v4", "5v5"];
 const maps = ["Random", "Harbor", "Factory", "Outpost", "District"];
 const navItems = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard },
-  { id: "matchmaking", label: "Matchmaking", icon: Swords },
-  { id: "leaderboard", label: "Leaderboard", icon: Trophy },
-  { id: "room", label: "Match room", icon: MessageSquare },
+  { id: "overview", label: "Genel Bakış", icon: LayoutDashboard, group: "ANA MENÜ" },
+  { id: "matchmaking", label: "Eşleştirme", icon: Swords, group: "OYNA" },
+  { id: "room", label: "Match Room", icon: MessageSquare, group: "OYNA" },
+  { id: "leaderboard", label: "Sıralama", icon: Trophy, group: "REKABET" },
+  { id: "teams", label: "Takımlar", icon: Users, group: "REKABET" },
+  { id: "tournaments", label: "Turnuvalar", icon: Medal, group: "REKABET" },
+  { id: "messages", label: "Mesajlar", icon: Send, group: "SOSYAL" },
+  { id: "notifications", label: "Bildirimler", icon: Bell, group: "SOSYAL" },
+  { id: "profile", label: "Oyuncu Profili", icon: Activity, group: "HESAP" },
+  { id: "settings", label: "Ayarlar", icon: ShieldCheck, group: "HESAP" },
 ];
 
 export default function Home() {
@@ -296,25 +302,29 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="hero">
-        <div className="hero-copy">
-          <div className="eyebrow"><span className="eyebrow-line"/> THE NEXT LEVEL OF COMPETITION</div>
-          <h1>PLAY TO <span>PROVE.</span><br/>CLIMB THE RANKS.</h1>
-          <p>Find your team, create a match, submit proof and earn your place on the CounterFlame leaderboard.</p>
-          <div className="hero-buttons"><button className="btn-primary" onClick={() => setView(user ? "matchmaking" : "overview")}>FIND A MATCH <ChevronRight size={17}/></button><button className="btn-ghost" onClick={() => setView("leaderboard")}>VIEW RANKINGS</button></div>
+      <aside className="global-sidebar">
+        <div className="side-label">COUNTERFLAME MENU</div>
+        {["ANA MENÜ","OYNA","REKABET","SOSYAL","HESAP"].map(group => (
+          <div key={group}>
+            <div className="side-label side-group">{group}</div>
+            {navItems.filter(item=>item.group===group).map(item=>(
+              <button key={item.id} className={view===item.id?"nav-link active":"nav-link"} onClick={()=>setView(item.id)}>
+                <item.icon size={17}/><span>{item.label}</span>{view===item.id&&<ChevronRight size={14}/>}
+              </button>
+            ))}
+          </div>
+        ))}
+        <div className="global-player">
+          <div className="player-avatar">{(profile?.username||user?.email||"P").slice(0,1).toUpperCase()}</div>
+          <b>{profile?.username || (user ? "Oyuncu" : "Misafir")}</b>
+          <span className="rank-label">{user ? `RATING · ${profile?.elo ?? 1000} ELO` : "GİRİŞ YAPILMADI"}</span>
         </div>
-        <div className="hero-art"><div className="orbit orbit-one"/><div className="orbit orbit-two"/><div className="hero-flame"><Flame size={104} strokeWidth={1.2}/></div><div className="hero-stat"><small>PLATFORM STATUS</small><b><span/> LIVE BETA</b></div><div className="hero-version">CF / V1000</div></div>
-      </div>
-
-      <section className="stat-grid">
-        <Stat icon={<Swords/>} label="MATCH MODES" value="1v1 — 5v5" detail="Ranked-ready queue"/>
-        <Stat icon={<Users/>} label="PLAYER BASE" value={String(leaderboard.length).padStart(2,"0")} detail="Registered profiles"/>
-        <Stat icon={<Trophy/>} label="TOP RATING" value={leaderboard[0]?.elo?.toLocaleString() || "—"} detail={leaderboard[0]?.username || "Awaiting players"}/>
-        <Stat icon={<ShieldCheck/>} label="RESULT SYSTEM" value="REVIEWED" detail="Evidence-first ranking"/>
-      </section>
+        <div className="sidebar-bottom"><span className="green-dot"/> COUNTERFLAME · V10000</div>
+      </aside>
 
       {notice && <div className="notice"><span>{notice}</span><button onClick={() => setNotice("")}><X size={16}/></button></div>}
 
+      <div className="content-area">
       {!user ? (
         <section className="auth-layout">
           <div className="section-heading"><div><span className="eyebrow">PLAYER ACCESS</span><h2>ENTER THE ARENA</h2><p>Sign in to join matchmaking and create match rooms.</p></div><ShieldCheck className="heading-icon"/></div>
@@ -330,14 +340,6 @@ export default function Home() {
         </section>
       ) : (
         <div className="workspace">
-          <aside className="sidebar">
-            <div className="side-label">MAIN MENU</div>
-            {navItems.map(item=><button key={item.id} className={view===item.id?"nav-link active":"nav-link"} onClick={()=>setView(item.id)}><item.icon size={18}/><span>{item.label}</span>{view===item.id&&<ChevronRight size={15}/>}</button>)}
-            <div className="side-label side-gap">PLAYER CARD</div>
-            <div className="player-card"><div className="player-avatar">{(profile?.username||"P").slice(0,1).toUpperCase()}</div><b>{profile?.username || "Player"}</b><span className="rank-label">RATING · {profile?.elo ?? 1000} ELO</span><div className="player-mini-stats"><span><b>{profile?.wins ?? 0}</b><small>WINS</small></span><span><b>{profile?.losses ?? 0}</b><small>LOSSES</small></span><span><b>{winRate}%</b><small>WIN RATE</small></span></div></div>
-            <div className="sidebar-bottom"><span className="green-dot"/> ALL SYSTEMS OPERATIONAL</div>
-          </aside>
-
           <section className="main-panel">
             {view==="overview" && <>
               <div className="section-heading"><div><span className="eyebrow">COMMAND CENTER</span><h2>WELCOME BACK, {(profile?.username||"PLAYER").toUpperCase()}</h2><p>Your competitive dashboard is ready.</p></div><button className="btn-ghost compact" onClick={()=>{void loadMatches();void loadLeaderboard();}}><RefreshCw size={15}/> REFRESH</button></div>
@@ -364,10 +366,20 @@ export default function Home() {
 
             {view==="room" && <>{activeMatch ? <MatchRoom match={activeMatch} players={players} messages={messages} userId={user.id} draft={draft} setDraft={setDraft} onSend={sendMessage} onCopy={copyCode} evidenceFile={evidenceFile} setEvidenceFile={setEvidenceFile} onUpload={uploadEvidence} busy={busy} winner={winner} setWinner={setWinner} score1={score1} setScore1={setScore1} score2={score2} setScore2={setScore2} onSubmitResult={submitResult}/> : <div className="panel-card empty-state"><Gamepad2 size={34}/><h3>NO ACTIVE ROOM</h3><p>Join a match with a code or create a new lobby.</p><button className="btn-primary" onClick={()=>setView("matchmaking")}>FIND A MATCH</button></div>}</>}
 
+
+            {["teams","tournaments","messages","notifications","profile","settings"].includes(view) && <div className="panel-card feature-placeholder">
+              <span className="tag-orange">V10000 MODÜLÜ</span>
+              <h2>{navItems.find(item=>item.id===view)?.label}</h2>
+              <p className="muted">Bu bölüm sol menüde ayrı tutuldu. Güvenli ve gerçek veritabanı bağlantısı tamamlanmadan sahte veri veya çalışıyormuş gibi görünen özellik gösterilmez.</p>
+              <div className="placeholder-status"><span className="green-dot"/> MODÜL PLANI HAZIR · GELİŞTİRME SIRASINDA</div>
+            </div>}
+
             {isModerator && <section className="moderator-panel"><div className="section-heading"><div><span className="eyebrow">STAFF TOOLS</span><h2>RESULT REVIEW QUEUE</h2></div><ShieldCheck className="heading-icon"/></div>{pendingResults.length===0?<p className="muted">No pending match results.</p>:pendingResults.map(item=><div className="review-row" key={item.match_id}><div><b>{item.score1} : {item.score2}</b><span>Winner: Team {item.winner_team} · {new Date(item.created_at).toLocaleString("tr-TR")}</span><small>{item.match_id.slice(0,8)}…</small></div><div className="review-actions"><button className="btn-ghost compact" disabled={busy} onClick={()=>reviewResult(item.match_id,false)}>REJECT</button><button className="btn-primary compact" disabled={busy} onClick={()=>reviewResult(item.match_id,true)}><CheckCircle2 size={14}/> APPROVE</button></div></div>)}</section>}
           </section>
         </div>
       )}
+
+      </div>
 
       <footer className="footer"><span>COUNTERFLAME <b>FACEIT</b> · V1000 DEVELOPMENT TRACK</span><span>COMMUNITY PROJECT · NOT AFFILIATED WITH ANY GAME PUBLISHER</span></footer>
     </main>
