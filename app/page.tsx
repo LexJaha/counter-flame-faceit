@@ -396,12 +396,21 @@ export default function Home() {
       if (inFlight) return;
       inFlight = true;
       try {
-        const { data, error } = await supabase.rpc("cf_get_matchmaking_counts");
+        const token = session?.access_token;
+        if (!token) {
+          if (!cancelled) setCountsOnline(false);
+          return;
+        }
+        const response = await fetch("/api/matchmaking-counts", {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
         if (cancelled) return;
-        if (error) {
+        if (!response.ok) {
           setCountsOnline(false);
           return;
         }
+        const data = await response.json();
         const rows = Array.isArray(data?.modes) ? data.modes : [];
         const next: Record<string, { queued: number; playing: number }> = {};
         for (const row of rows) {
@@ -426,7 +435,7 @@ export default function Home() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [view]);
+  }, [view, session?.access_token]);
 
   useEffect(() => {
     if (!activeMatch || !supabase) return;
