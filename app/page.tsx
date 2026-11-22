@@ -430,7 +430,7 @@ export default function Home() {
       }
     };
     void refreshCounts();
-    const timer = window.setInterval(() => { void refreshCounts(); }, 500);
+    const timer = window.setInterval(() => { void refreshCounts(); }, 5000);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
@@ -882,7 +882,7 @@ export default function Home() {
   return (
     <main className="cf-shell">
       <header className="topbar">
-        <a className="brand" href="#"><span className="brand-mark"><Flame size={22}/></span><span><b>COUNTERFLAME <em>FACEIT</em> <span className="brand-version">v15000</span></b><small>COMPETITIVE COMMUNITY PLATFORM</small></span></a>
+        <a className="brand" href="#"><span className="brand-mark"><Flame size={22}/></span><span><b>COUNTERFLAME <em>FACEIT</em> <span className="brand-version">v21000</span></b><small>COMPETITIVE COMMUNITY PLATFORM</small></span></a>
         <div className="top-actions">
           <select aria-label="Language" className="cf-language-select" value={language} onChange={e=>changeLanguage(e.target.value as "en"|"tr")}><option value="en">English</option><option value="tr">Türkçe</option></select>
           <span className="season-pill"><span/> SEASON 01 · BETA</span>
@@ -927,7 +927,7 @@ export default function Home() {
           <div className="player-meta"><b>{profile?.username || (user ? "Player" : "Guest")}{isDev(profile?.username) && <span className="dev-badge">DEV</span>}</b><span className="rank-label">{user ? `RATING · ${profile?.elo ?? 1000} ELO` : "GİRİŞ YAPILMADI"}</span></div>
           <span className="player-status"><i/></span>
         </div>
-        <div className="sidebar-bottom"><span className="green-dot"/> COUNTERFLAME <b>V15000</b><small>BUILT FOR COMPETITIVE PLAY</small></div>
+        <div className="sidebar-bottom"><span className="green-dot"/> COUNTERFLAME <b>V21000</b><small>BUILT FOR COMPETITIVE PLAY</small></div>
       </aside>
 
       <nav className="mobile-dock" aria-label="Mobil ana menü">
@@ -1039,7 +1039,7 @@ export default function Home() {
                   </span>
                 </button>;
               })}</div>
-              <div className="matchmaking-counts-foot"><span className={countsOnline?"counts-live-indicator online":"counts-live-indicator"}/>{countsOnline?tx("REAL DATABASE COUNTS · AUTO-REFRESH 0.5 SEC","GERÇEK VERİTABANI SAYACI · 0,5 SN'DE GÜNCELLENİR"):tx("CONNECTING TO LIVE COUNTS…","CANLI SAYILARA BAĞLANILIYOR…")}</div><button className="btn-primary full" disabled={busy} onClick={joinQueue}>{queueState==="waiting"?"OYUNCU ARANIYOR…":"OTOMATİK EŞLEŞMEYİ BAŞLAT"} <ChevronRight size={16}/></button>{queueState==="waiting"&&<><div className="cf-search-loader" role="status" aria-live="polite"><div className="cf-loader-ring"><div className="cf-loader-core">CF</div></div><b>RAKİP ARANIYOR</b><span>Uygun oyuncu bulunduğunda otomatik eşleşeceksin.</span><i className="cf-loader-pulse"/></div><button className="btn-ghost full mt-2" onClick={leaveQueue}>ARAMAYI İPTAL ET</button></>}</div>
+              <div className="matchmaking-counts-foot"><span className={countsOnline?"counts-live-indicator online":"counts-live-indicator"}/>{countsOnline?tx("REAL DATABASE COUNTS · AUTO-REFRESH 5 SEC","GERÇEK VERİTABANI SAYACI · 5 SN'DE GÜNCELLENİR"):tx("CONNECTING TO LIVE COUNTS…","CANLI SAYILARA BAĞLANILIYOR…")}</div><button className="btn-primary full" disabled={busy} onClick={joinQueue}>{queueState==="waiting"?"OYUNCU ARANIYOR…":"OTOMATİK EŞLEŞMEYİ BAŞLAT"} <ChevronRight size={16}/></button>{queueState==="waiting"&&<><div className="cf-search-loader" role="status" aria-live="polite"><div className="cf-loader-ring"><div className="cf-loader-core">CF</div></div><b>RAKİP ARANIYOR</b><span>Uygun oyuncu bulunduğunda otomatik eşleşeceksin.</span><i className="cf-loader-pulse"/></div><button className="btn-ghost full mt-2" onClick={leaveQueue}>ARAMAYI İPTAL ET</button></>}</div>
               </div>
             </>}
 
@@ -1168,7 +1168,7 @@ export default function Home() {
 
       </div>
 
-      <footer className="footer"><span>COUNTERFLAME <b>FACEIT</b> · V15000 UI EDITION</span><span>COMMUNITY PROJECT · NOT AFFILIATED WITH ANY GAME PUBLISHER</span></footer>
+      <footer className="footer"><span>COUNTERFLAME <b>FACEIT</b> · V21000 UI EDITION</span><span>COMMUNITY PROJECT · NOT AFFILIATED WITH ANY GAME PUBLISHER</span></footer>
     </main>
   );
 }
