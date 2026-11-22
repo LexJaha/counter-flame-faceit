@@ -111,7 +111,7 @@ export default function Home() {
   const [playerName, setPlayerName] = useState("");
 
   useEffect(() => {
-    try { setStage(localStorage.getItem("cf-welcome-accepted") === "yes" ? "login" : "welcome"); }
+    try { setPlayerName(localStorage.getItem("cf-player-name") || ""); setStage(localStorage.getItem("cf-welcome-accepted") === "yes" ? "login" : "welcome"); }
     catch { setStage("welcome"); }
   }, []);
 
@@ -131,7 +131,7 @@ export default function Home() {
     setStage("greeting");
   }
 
-  if (stage === "loading") return <main className="site-shell"/>;
+  if (stage === "loading") return <main className="app-loading" aria-label="Loading Counter Flame"><div className="loading-emblem"><img src="/counterflame-logo.svg" alt="Counter Flame"/></div><p>COUNTER <b>FLAME</b></p><span>PREPARING YOUR ARENA</span><i/></main>;
   if (stage === "home") return <Dashboard playerName={playerName || "PLAYER"}/>;
 
   return (
