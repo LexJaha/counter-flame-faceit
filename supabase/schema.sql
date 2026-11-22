@@ -112,4 +112,4 @@ as $function$
 $function$;
 
 revoke all on function public.cf_get_matchmaking_counts() from public;
-grant execute on function public.cf_get_matchmaking_counts() to anon, authenticated;
+grant execute on function public.cf_get_matchmaking_counts() to authenticated;
