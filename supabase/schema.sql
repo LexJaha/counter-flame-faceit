@@ -64,3 +64,52 @@ begin
     alter publication supabase_realtime add table public.match_messages;
   end if;
 end $;
+
+
+-- Public aggregate counters for the matchmaking screen. No player identities are exposed.
+create or replace function public.cf_get_matchmaking_counts()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = pg_catalog, public
+as $function$
+  with mode_list(mode) as (
+    values ('1v1'::text), ('2v2'::text), ('3v3'::text), ('4v4'::text), ('5v5'::text)
+  ),
+  queue_counts as (
+    select q.mode, count(*)::integer as queued
+    from public.cf_match_queue q
+    where q.match_id is null
+      and q.joined_at >= now() - interval '30 minutes'
+    group by q.mode
+  ),
+  playing_counts as (
+    select m.mode, count(distinct mp.user_id)::integer as playing
+    from public.cf_matches m
+    join public.cf_match_players mp on mp.match_id = m.id
+    where m.status = 'live'
+       or (m.status = 'ready' and m.created_at >= now() - interval '30 minutes')
+    group by m.mode
+  )
+  select jsonb_build_object(
+    'modes',
+    coalesce(
+      jsonb_agg(
+        jsonb_build_object(
+          'mode', ml.mode,
+          'queued', coalesce(qc.queued, 0),
+          'playing', coalesce(pc.playing, 0)
+        ) order by ml.mode
+      ),
+      '[]'::jsonb
+    ),
+    'updated_at', now()
+  )
+  from mode_list ml
+  left join queue_counts qc on qc.mode = ml.mode
+  left join playing_counts pc on pc.mode = ml.mode;
+$function$;
+
+revoke all on function public.cf_get_matchmaking_counts() from public;
+grant execute on function public.cf_get_matchmaking_counts() to anon, authenticated;
