@@ -89,7 +89,6 @@ as $function$
     from public.cf_matches m
     join public.cf_match_players mp on mp.match_id = m.id
     where m.status = 'live'
-       or (m.status = 'ready' and m.created_at >= now() - interval '30 minutes')
     group by m.mode
   )
   select jsonb_build_object(
