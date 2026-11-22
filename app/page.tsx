@@ -387,7 +387,7 @@ export default function Home() {
   }, [user?.id, queueState, mode, loadMatch]);
 
   // Pull real queue and active-match totals from a read-only aggregate RPC.
-  // Refresh every five seconds while the matchmaking screen is open.
+  // Refresh twice per second while the matchmaking screen is open.
   useEffect(() => {
     if (view !== "matchmaking" || !supabase) return;
     let cancelled = false;
@@ -430,7 +430,7 @@ export default function Home() {
       }
     };
     void refreshCounts();
-    const timer = window.setInterval(() => { void refreshCounts(); }, 5000);
+    const timer = window.setInterval(() => { void refreshCounts(); }, 500);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
@@ -1031,15 +1031,15 @@ export default function Home() {
               <div className="matchmaking-grid">
                 <div className="panel-card"><div className="card-top"><span className="tag-orange">RANKED SEARCH</span><Zap size={19}/></div><h3>FIND A MATCH</h3><p className="muted">Gerçek oyuncular aynı mod ve yakın ELO aralığında otomatik eşleşir. Başlangıç modu 1v1.</p><label className="field-label">GAME MODE</label><div className="mode-grid">{modes.map(item=>{
                 const counts = modeCounts[item];
-                return <button key={item} type="button" title={tx("Queue = waiting players · Live = players in active matches","Queue = sıradaki oyuncular · Live = aktif maçlardaki oyuncular")} aria-label={`${item}: ${countsOnline ? counts?.queued ?? 0 : "—"} waiting, ${countsOnline ? counts?.playing ?? 0 : "—"} playing`} className={mode===item?"mode-option selected":"mode-option"} onClick={()=>setMode(item)}>
+                return <button key={item} type="button" title={tx("Queue = waiting players · Live = players in active matches","Queue = sıradaki oyuncular · Live = aktif maçlardaki oyuncular")} aria-label={`${item}: ${countsOnline ? counts?.queued ?? 0 : "—"} waiting, ${countsOnline ? counts?.playing ?? 0 : "—"} playing`} aria-pressed={mode===item} className={mode===item?"mode-option selected":"mode-option"} onClick={()=>setMode(item)}>
                   <span className="mode-option-name">{item}</span>
                   <span className="mode-option-metrics">
-                    <small><i className="mode-count-dot queue"/> <b>{countsOnline ? counts?.queued ?? 0 : "—"}</b> {tx("WAIT","BEKLE")}</small>
-                    <small><i className="mode-count-dot playing"/> <b>{countsOnline ? counts?.playing ?? 0 : "—"}</b> {tx("LIVE","AKTİF")}</small>
+                    <small><i className="mode-count-dot queue"/> <b key={item + "-queue-" + (counts?.queued ?? "loading")}>{countsOnline ? counts?.queued ?? 0 : "—"}</b> {tx("WAIT","BEKLE")}</small>
+                    <small><i className="mode-count-dot playing"/> <b key={item + "-playing-" + (counts?.playing ?? "loading")}>{countsOnline ? counts?.playing ?? 0 : "—"}</b> {tx("LIVE","AKTİF")}</small>
                   </span>
                 </button>;
               })}</div>
-              <div className="matchmaking-counts-foot"><span className={countsOnline?"counts-live-indicator online":"counts-live-indicator"}/>{countsOnline?tx("REAL DATABASE COUNTS · AUTO-REFRESH 5 SEC","GERÇEK VERİTABANI SAYACI · 5 SN'DE GÜNCELLENİR"):tx("CONNECTING TO LIVE COUNTS…","CANLI SAYILARA BAĞLANILIYOR…")}</div><button className="btn-primary full" disabled={busy} onClick={joinQueue}>{queueState==="waiting"?"OYUNCU ARANIYOR…":"OTOMATİK EŞLEŞMEYİ BAŞLAT"} <ChevronRight size={16}/></button>{queueState==="waiting"&&<><div className="cf-search-loader" role="status" aria-live="polite"><div className="cf-loader-ring"><div className="cf-loader-core">CF</div></div><b>RAKİP ARANIYOR</b><span>Uygun oyuncu bulunduğunda otomatik eşleşeceksin.</span><i className="cf-loader-pulse"/></div><button className="btn-ghost full mt-2" onClick={leaveQueue}>ARAMAYI İPTAL ET</button></>}</div>
+              <div className="matchmaking-counts-foot"><span className={countsOnline?"counts-live-indicator online":"counts-live-indicator"}/>{countsOnline?tx("REAL DATABASE COUNTS · AUTO-REFRESH 0.5 SEC","GERÇEK VERİTABANI SAYACI · 0,5 SN'DE GÜNCELLENİR"):tx("CONNECTING TO LIVE COUNTS…","CANLI SAYILARA BAĞLANILIYOR…")}</div><button className="btn-primary full" disabled={busy} onClick={joinQueue}>{queueState==="waiting"?"OYUNCU ARANIYOR…":"OTOMATİK EŞLEŞMEYİ BAŞLAT"} <ChevronRight size={16}/></button>{queueState==="waiting"&&<><div className="cf-search-loader" role="status" aria-live="polite"><div className="cf-loader-ring"><div className="cf-loader-core">CF</div></div><b>RAKİP ARANIYOR</b><span>Uygun oyuncu bulunduğunda otomatik eşleşeceksin.</span><i className="cf-loader-pulse"/></div><button className="btn-ghost full mt-2" onClick={leaveQueue}>ARAMAYI İPTAL ET</button></>}</div>
               </div>
             </>}
 
