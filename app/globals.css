@@ -53,3 +53,99 @@ button{cursor:pointer}
 @media(max-width:700px){.topbar{height:70px}.topbar-right{font-size:7px;letter-spacing:.1em}.hero{padding-top:90px}.feature-grid{grid-template-columns:repeat(2,minmax(0,1fr));padding-bottom:50px}.intro-card{padding:22px 18px}.intro-logo{width:90px;height:90px}.intro-features{gap:5px}.intro-features span{font-size:7px;padding:8px}}
 @media(max-width:390px){.topbar-right{display:none}.feature-grid{gap:8px}.feature{padding:15px}.intro-card{padding:18px 14px}.intro-copy{font-size:11px}.login-screen{padding:20px 14px}.login-panel{padding:20px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important}}
+
+
+/* CINEMATIC ARENA BACKGROUND — Counter Flame visual pass */
+.site-shell{
+  isolation:isolate;
+  background:
+    radial-gradient(ellipse at 78% 34%,rgba(255,83,24,.18),transparent 30%),
+    radial-gradient(ellipse at 8% 82%,rgba(255,112,43,.09),transparent 28%),
+    linear-gradient(135deg,#090a0d 0%,#111216 46%,#070809 100%);
+}
+.site-shell:before{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.48;
+  background:
+    linear-gradient(115deg,transparent 0 43%,rgba(255,255,255,.025) 43.1%,transparent 43.35% 100%),
+    repeating-linear-gradient(0deg,transparent 0 59px,rgba(255,255,255,.027) 60px,transparent 61px),
+    repeating-linear-gradient(90deg,transparent 0 59px,rgba(255,255,255,.023) 60px,transparent 61px);
+  mask-image:linear-gradient(90deg,#000,transparent 95%);
+}
+.site-shell:after{
+  content:"";position:absolute;z-index:0;pointer-events:none;right:-7vw;top:105px;
+  width:min(58vw,760px);aspect-ratio:1;background:url('/counterflame-logo.svg') center/contain no-repeat;
+  opacity:.055;filter:grayscale(1) drop-shadow(0 0 55px rgba(255,91,22,.45));
+  animation:brand-drift 18s ease-in-out infinite alternate;
+}
+.topbar,.hero,.feature-grid,.footer{z-index:1;position:relative}
+.hero{max-width:1280px;min-height:570px;display:flex;flex-direction:column;justify-content:center}
+.hero:after{
+  content:"";position:absolute;z-index:-1;right:4%;top:13%;width:clamp(220px,34vw,440px);aspect-ratio:1;
+  border:1px solid rgba(255,117,48,.16);border-radius:50%;
+  box-shadow:0 0 0 24px rgba(255,112,43,.025),0 0 0 65px rgba(255,112,43,.018),inset 0 0 75px rgba(255,96,28,.08);
+}
+.hero-orbit{right:9%;top:17%;width:clamp(220px,32vw,410px);height:auto;aspect-ratio:1;border-color:rgba(255,155,83,.17);box-shadow:0 0 80px rgba(255,82,24,.09),0 0 0 35px rgba(255,112,43,.025),0 0 0 90px rgba(255,112,43,.012)}
+.hero h1{text-shadow:0 8px 50px rgba(0,0,0,.6)}
+.feature{position:relative;overflow:hidden;backdrop-filter:blur(12px);border-color:rgba(255,255,255,.1);transition:transform .25s,border-color .25s,background .25s}
+.feature:before{content:"";position:absolute;inset:0 auto 0 0;width:2px;background:linear-gradient(transparent,var(--orange),transparent);opacity:.8}
+.feature:hover{transform:translateY(-5px);border-color:rgba(255,112,43,.45);background:linear-gradient(145deg,rgba(255,112,43,.09),rgba(255,255,255,.012))}
+.intro-backdrop{
+  background:
+    radial-gradient(ellipse at 50% 48%,rgba(255,83,22,.13),transparent 34%),
+    radial-gradient(ellipse at 12% 10%,rgba(255,117,48,.1),transparent 26%),
+    repeating-linear-gradient(135deg,transparent 0 70px,rgba(255,255,255,.018) 71px,transparent 72px),
+    rgba(3,4,6,.91);
+  backdrop-filter:blur(18px) saturate(125%);
+}
+.intro-backdrop:before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.22;
+  background:
+    radial-gradient(circle at 18% 24%,#ff7a2b 0 1px,transparent 2px),
+    radial-gradient(circle at 76% 18%,#ff7a2b 0 1px,transparent 2px),
+    radial-gradient(circle at 84% 76%,#ff7a2b 0 1px,transparent 2px),
+    radial-gradient(circle at 25% 82%,#ff7a2b 0 1px,transparent 2px);
+  background-size:210px 190px,270px 230px,230px 210px,310px 260px;
+  animation:ember-float 14s linear infinite;
+}
+.intro-card,.start-card{
+  border:1px solid rgba(255,133,65,.58);
+  border-radius:14px;
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.055),transparent 32%),
+    radial-gradient(ellipse at 50% -8%,rgba(255,104,37,.23),transparent 52%),
+    linear-gradient(150deg,rgba(25,27,32,.97),rgba(7,8,11,.985) 72%);
+  box-shadow:0 35px 120px rgba(0,0,0,.82),0 0 0 1px rgba(255,255,255,.025),0 0 85px rgba(255,79,18,.16),inset 0 1px rgba(255,255,255,.08);
+}
+.intro-card:after,.start-card:after{width:150px;height:2px;box-shadow:0 0 18px rgba(255,112,43,.75)}
+.intro-logo{filter:drop-shadow(0 0 28px rgba(255,105,35,.4));animation:logo-pulse 4s ease-in-out infinite}
+.start-emblem{filter:drop-shadow(0 0 44px rgba(255,105,35,.5));animation:logo-pulse 4s ease-in-out infinite}
+.understand-button{position:relative;overflow:hidden;box-shadow:0 8px 30px rgba(255,89,26,.2),inset 0 1px rgba(255,255,255,.35)}
+.understand-button:after{content:"";position:absolute;top:-60%;left:-35%;width:24%;height:220%;transform:rotate(25deg);background:rgba(255,255,255,.3);filter:blur(8px);transition:left .5s}
+.understand-button:hover:after{left:120%}
+.login-screen{
+  background:
+    radial-gradient(ellipse at 50% 50%,rgba(255,91,24,.1),transparent 48%),
+    repeating-linear-gradient(135deg,transparent 0 80px,rgba(255,255,255,.016) 81px,transparent 82px),
+    #08090b;
+}
+.login-ambient{
+  background:
+    radial-gradient(ellipse at 12% 52%,rgba(255,87,22,.2),transparent 34%),
+    radial-gradient(ellipse at 88% 14%,rgba(255,112,43,.13),transparent 32%),
+    linear-gradient(125deg,#0b0c0f,#070809 75%);
+}
+.login-layout:before{content:"";position:absolute;inset:5% -5%;z-index:-1;pointer-events:none;background:url('/counterflame-logo.svg') 77% 50%/min(58vw,590px) auto no-repeat;opacity:.035;filter:grayscale(1)}
+.login-panel{backdrop-filter:blur(18px);border-color:rgba(255,132,65,.42);box-shadow:0 28px 100px rgba(0,0,0,.65),0 0 70px rgba(255,93,25,.11),inset 0 1px rgba(255,255,255,.07)}
+@keyframes brand-drift{from{transform:rotate(-7deg) scale(.96)}to{transform:rotate(7deg) scale(1.04)}}
+@keyframes ember-float{from{transform:translate3d(0,0,0)}to{transform:translate3d(-18px,-24px,0)}}
+@keyframes logo-pulse{0%,100%{filter:drop-shadow(0 0 22px rgba(255,105,35,.28))}50%{filter:drop-shadow(0 0 42px rgba(255,105,35,.55))}}
+@media(max-width:700px){
+  .hero{min-height:490px;padding-top:65px}
+  .hero:after{right:-16%;top:12%;opacity:.65}
+  .site-shell:after{right:-25%;top:120px;width:90vw;opacity:.035}
+  .intro-card,.start-card{box-shadow:0 20px 70px rgba(0,0,0,.85),0 0 42px rgba(255,79,18,.13)}
+}
+@media(prefers-reduced-motion:reduce){
+  .site-shell:after,.intro-backdrop:before,.intro-logo,.start-emblem{animation:none!important}
+  .feature,.understand-button:after{transition:none!important}
+}

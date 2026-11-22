@@ -88,7 +88,7 @@ export default function Home() {
               <p className="intro-overline">THE ARENA IS WAITING</p>
               <h2>READY TO <span>ENTER?</span></h2>
               <p>Your competition. Your journey. It starts here.</p>
-              <button className="understand-button" onClick={openLogin}>ŞİMDİ BAŞLA <span>→</span></button>
+              <button className="understand-button" onClick={openLogin}>ENTER THE ARENA <span>→</span></button>
               <button className="text-back" onClick={() => setStage("welcome")}>BACK</button>
             </section>
           )}
