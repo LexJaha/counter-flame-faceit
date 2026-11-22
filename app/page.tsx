@@ -89,6 +89,7 @@ export default function Home() {
   const tx = (en: string, tr: string) => language === "tr" ? tr : en;
   const isDev = (name?: string | null) => (name || "").trim().toLowerCase() === "lexf19";
   const [showWelcome, setShowWelcome] = useState(false);
+  const [matchFoundOpen, setMatchFoundOpen] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -344,9 +345,8 @@ export default function Home() {
           const matchId = (payload.new as any).match_id as string | null;
           if (matchId) {
             setQueueState("");
-            setNotice("Match found. Your room is ready.");
-            setView("room");
-            void loadMatch(matchId);
+            setNotice("");
+            void loadMatch(matchId).then(() => setMatchFoundOpen(true));
           }
         })
       .subscribe();
@@ -367,9 +367,10 @@ export default function Home() {
         if (error) throw error;
         if (data?.status === "matched" && data.match_id) {
           setQueueState("");
-          setNotice("Match found. Your room is ready.");
+          setNotice("");
           setView("room");
           await loadMatch(data.match_id);
+          setMatchFoundOpen(true);
         } else if (data?.status === "waiting") {
           setNotice(`Searching for real players: ${data.players_found ?? 1}/${data.players_needed ?? 2}. ELO range ±${data.elo_range ?? 150}.`);
         }
@@ -580,7 +581,7 @@ export default function Home() {
       if (error) throw error;
       if (data?.status === "matched" && data.match_id) {
         await loadMatch(data.match_id); setView("room"); setQueueState("");
-        setNotice("Match found. Your room is ready.");
+        setNotice(""); setMatchFoundOpen(true);
       } else {
         setQueueState("waiting");
         setNotice(`Searching: ${data?.players_found ?? 1}/${data?.players_needed ?? "?"} players found.`);
@@ -828,7 +829,7 @@ export default function Home() {
   return (
     <main className="cf-shell">
       <header className="topbar">
-        <a className="brand" href="#"><span className="brand-mark"><Flame size={22}/></span><span><b>COUNTERFLAME <em>FACEIT</em> <span className="brand-version">v1.0.2</span></b><small>COMPETITIVE COMMUNITY PLATFORM</small></span></a>
+        <a className="brand" href="#"><span className="brand-mark"><Flame size={22}/></span><span><b>COUNTERFLAME <em>FACEIT</em> <span className="brand-version">v1.0.9</span></b><small>COMPETITIVE COMMUNITY PLATFORM</small></span></a>
         <div className="top-actions">
           <select aria-label="Language" className="cf-language-select" value={language} onChange={e=>changeLanguage(e.target.value as "en"|"tr")}><option value="en">English</option><option value="tr">Türkçe</option></select>
           <span className="season-pill"><span/> SEASON 01 · BETA</span>
@@ -899,6 +900,25 @@ export default function Home() {
       {notice && <div className="notice"><span>{notice}</span><button onClick={() => setNotice("")}><X size={16}/></button></div>}
 
       {showWelcome && <div className="welcome-overlay" role="dialog" aria-modal="true" aria-labelledby="welcome-title"><div className="welcome-card"><div className="welcome-topline"><span><i/> SYSTEM ONLINE</span><span>CF / 001</span></div><div className="welcome-hero-art"><div className="welcome-orbit welcome-orbit-a"/><div className="welcome-orbit welcome-orbit-b"/><div className="welcome-mark"><Flame size={34}/></div><span className="welcome-spark welcome-spark-a"/><span className="welcome-spark welcome-spark-b"/></div><span className="eyebrow">YOUR COMPETITIVE JOURNEY STARTS HERE</span><h2 id="welcome-title">WELCOME TO<br/><em>COUNTERFLAME.</em></h2><p>Queue up. Play together. Prove your skill. Your next chapter on the leaderboard starts now.</p><div className="welcome-feature-grid"><div><Swords size={17}/><b>COMPETE</b><small>Find your next match</small></div><div><Trophy size={17}/><b>CLIMB</b><small>Earn your ELO</small></div><div><BrainCircuit size={17}/><b>IMPROVE</b><small>Review your performance</small></div></div><button className="btn-primary welcome-done" onClick={() => { window.localStorage.setItem("cf-welcome-done","1"); setShowWelcome(false); }}>LET’S GO <ChevronRight size={17}/></button><small className="welcome-once">ONE QUICK BRIEFING · SHOWN ONLY ONCE</small></div></div>}
+
+
+      {matchFoundOpen && activeMatch && <div className="match-found-overlay" role="dialog" aria-modal="true" aria-labelledby="match-found-title">
+        <div className="match-found-card">
+          <div className="match-found-top"><span><i/> MATCH CONFIRMED</span><small>COUNTERFLAME / RANKED</small></div>
+          <div className="match-found-emblem"><div className="match-found-ring"/><div className="match-found-ring second"/><Swords size={37}/></div>
+          <span className="match-found-kicker">YOUR NEXT CHALLENGE IS READY</span>
+          <h2 id="match-found-title">MATCH <em>FOUND.</em></h2>
+          <p>Opponent found. Your match room is ready — jump in and get set.</p>
+          <div className="match-found-details">
+            <div><small>GAME MODE</small><b>{activeMatch.mode}</b></div>
+            <div><small>MAP</small><b>{activeMatch.map}</b></div>
+            <div><small>PLAYERS</small><b>{players.length}</b></div>
+          </div>
+          <div className="match-found-code"><span>MATCH CODE</span><b>{activeMatch.code}</b></div>
+          <button className="btn-primary full match-found-enter" onClick={() => { setMatchFoundOpen(false); setView("room"); }}>ENTER MATCH ROOM <ChevronRight size={17}/></button>
+          <button className="match-found-dismiss" onClick={() => setMatchFoundOpen(false)}>STAY HERE</button>
+        </div>
+      </div>}
 
       {showAdminLogin && <div className="admin-login-overlay"><div className="admin-login-card"><button className="admin-login-close" onClick={() => setShowAdminLogin(false)} aria-label="Close"><X size={18}/></button><span className="eyebrow">COUNTERFLAME CONTROL</span><h2>ADMIN LOGIN</h2><p>Enter the administrator password to continue.</p><input className="cf-input" type="password" autoComplete="current-password" placeholder="Admin password" value={adminPasswordInput} onChange={e => setAdminPasswordInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") void loginAdmin(); }}/><button className="btn-primary full" disabled={!adminPasswordInput || adminLoginBusy} onClick={() => void loginAdmin()}>{adminLoginBusy ? "CHECKING…" : "LOGIN TO ADMIN"} <ShieldCheck size={15}/></button><small>Password is checked on the server and is never stored in the browser.</small></div></div>}
 
