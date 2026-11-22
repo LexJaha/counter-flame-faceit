@@ -1072,3 +1072,24 @@ body{background-color:#07090d;background-image:radial-gradient(ellipse at 72% 0%
 .match-found-dismiss:hover{color:#e6edf4}
 @media(max-width:480px){.match-found-card{padding:19px 17px 17px;border-radius:19px}.match-found-emblem{width:96px;height:96px;margin:17px auto 12px}.match-found-details{gap:5px}.match-found-details>div{padding:10px 3px}.match-found-details b{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.match-found-overlay,.match-found-card,.match-found-ring{animation:none}}
+
+
+/* v5000 live matchmaking counters */
+.mode-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
+.mode-option{display:grid;justify-items:center;align-content:center;gap:7px;min-width:0;min-height:69px;padding:9px 3px;border-radius:11px;background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.018));backdrop-filter:blur(12px);transition:border-color .18s ease,background .18s ease,transform .18s ease}
+.mode-option:hover{transform:translateY(-2px);border-color:rgba(255,154,104,.45)}
+.mode-option-name{font-size:12px;font-weight:950;letter-spacing:.04em;color:#e8edf3}
+.mode-option-metrics{display:grid;gap:4px;width:100%}
+.mode-option-metrics small{display:flex;align-items:center;justify-content:center;gap:3px;white-space:nowrap;color:rgba(198,210,222,.72);font-size:7px;font-weight:850;letter-spacing:.015em}
+.mode-option-metrics b{color:#f4f7fa;font-size:9px;font-variant-numeric:tabular-nums}
+.mode-count-dot{display:inline-block;width:5px;height:5px;flex:none;border-radius:50%}
+.mode-count-dot.queue{background:#ffad78;box-shadow:0 0 8px rgba(255,173,120,.55)}
+.mode-count-dot.playing{background:#6de2b0;box-shadow:0 0 8px rgba(109,226,176,.55)}
+.mode-option.selected .mode-option-name{color:#ffad83}
+.mode-option.selected .mode-option-metrics small{color:rgba(255,230,216,.78)}
+.matchmaking-counts-foot{display:flex;align-items:center;gap:8px;margin:-9px 0 17px;color:rgba(174,188,202,.58);font-size:8px;font-weight:850;letter-spacing:.1em}
+.counts-live-indicator{width:6px;height:6px;flex:none;border-radius:50%;background:#8995a3}
+.counts-live-indicator.online{background:#6de2b0;box-shadow:0 0 10px rgba(109,226,176,.7);animation:cf-count-pulse 1.8s ease-in-out infinite}
+@keyframes cf-count-pulse{50%{opacity:.45;box-shadow:0 0 3px rgba(109,226,176,.3)}}
+@media(max-width:480px){.mode-grid{gap:5px}.mode-option{min-height:64px;padding:8px 1px}.mode-option-name{font-size:11px}.mode-option-metrics small{font-size:6.5px}.mode-option-metrics b{font-size:8px}.matchmaking-counts-foot{font-size:7px;letter-spacing:.06em}}
+@media(prefers-reduced-motion:reduce){.counts-live-indicator.online{animation:none}}
