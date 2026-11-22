@@ -1,6 +1,6 @@
 {
   "name": "counter-flame-faceit",
-  "version": "15000.0.0",
+  "version": "20000.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
