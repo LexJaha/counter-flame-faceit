@@ -882,7 +882,7 @@ export default function Home() {
   return (
     <main className="cf-shell">
       <header className="topbar">
-        <a className="brand" href="#"><span className="brand-mark"><Flame size={22}/></span><span><b>COUNTERFLAME <em>FACEIT</em> <span className="brand-version">v23000</span></b><small>COMPETITIVE COMMUNITY PLATFORM</small></span></a>
+        <a className="brand" href="#"><span className="brand-mark"><Flame size={22}/></span><span><b>COUNTERFLAME <em>FACEIT</em> <span className="brand-version">v24000</span></b><small>COMPETITIVE COMMUNITY PLATFORM</small></span></a>
         <div className="top-actions">
           <select aria-label="Language" className="cf-language-select" value={language} onChange={e=>changeLanguage(e.target.value as "en"|"tr")}><option value="en">English</option><option value="tr">Türkçe</option></select>
           <span className="season-pill"><span/> SEASON 01 · BETA</span>
@@ -927,7 +927,7 @@ export default function Home() {
           <div className="player-meta"><b>{profile?.username || (user ? "Player" : "Guest")}{isDev(profile?.username) && <span className="dev-badge">DEV</span>}</b><span className="rank-label">{user ? `RATING · ${profile?.elo ?? 1000} ELO` : "GİRİŞ YAPILMADI"}</span></div>
           <span className="player-status"><i/></span>
         </div>
-        <div className="sidebar-bottom"><span className="green-dot"/> COUNTERFLAME <b>V23000</b><small>BUILT FOR COMPETITIVE PLAY</small></div>
+        <div className="sidebar-bottom"><span className="green-dot"/> COUNTERFLAME <b>V24000</b><small>BUILT FOR COMPETITIVE PLAY</small></div>
       </aside>
 
       <nav className="mobile-dock" aria-label="Mobil ana menü">
@@ -977,18 +977,37 @@ export default function Home() {
 
       <div className="content-area">
       {!user ? (
-        <section className="auth-layout auth-landing">
-          <div className="landing-copy"><span className="landing-kicker"><span className="green-dot"/> COMPETITIVE PLATFORM · SEASON 01</span><h1>PLAY TO<br/><em>CLIMB.</em></h1><p>Build your rank. Find your squad. Own the leaderboard. CounterFlame brings your competitive matches into one focused arena.</p><div className="landing-highlights"><div><b>01</b><span>RANKED<br/>MATCHMAKING</span></div><div><b>02</b><span>PRIVATE<br/>MATCH ROOMS</span></div><div><b>03</b><span>LIVE<br/>LEADERBOARD</span></div></div><div className="landing-footnote"><Flame size={16}/> BUILT FOR THE COMPETITIVE COMMUNITY</div></div>
-          <div className="auth-card auth-card-premium">
-            <label>{tx("CHOOSE YOUR LANGUAGE","DİLİNİ SEÇ")}</label>
-            <select aria-label="Choose language" className="cf-input" value={language} onChange={e=>changeLanguage(e.target.value as "en"|"tr")}><option value="en">English</option><option value="tr">Türkçe</option></select>
-            <div className="auth-tabs"><button className={authMode==="in"?"selected":""} onClick={()=>setAuthMode("in")}>SIGN IN</button><button className={authMode==="up"?"selected":""} onClick={()=>setAuthMode("up")}>CREATE ACCOUNT</button></div>
-            {authMode==="up" && <input className="cf-input" placeholder="Player name (3–20 characters)" value={username} onChange={e=>setUsername(e.target.value)} maxLength={20}/>}
-            <input className="cf-input" type="email" placeholder="Email address" value={email} onChange={e=>setEmail(e.target.value)}/>
-            <input className="cf-input" type="password" placeholder="Password (at least 6 characters)" value={password} onChange={e=>setPassword(e.target.value)}/>
-            <button className="btn-primary full" disabled={!configured||busy||!email||password.length<6||(authMode==="up"&&username.trim().length<3)} onClick={authenticate}>{busy?"PLEASE WAIT":authMode==="in"?"SIGN IN TO COUNTERFLAME":"CREATE PLAYER ACCOUNT"} <ChevronRight size={17}/></button>
-            {!configured && <p className="muted small">Add the Supabase URL and publishable key to the deployment environment to enable account access.</p>}
-            <p className="auth-foot"><ShieldCheck size={14}/> Your account and match data are protected by Supabase Auth and RLS.</p>
+        <section className="auth-layout auth-landing auth-v2">
+          <div className="auth-showcase">
+            <div className="auth-kicker"><i/> COMPETITIVE PLATFORM <span>·</span> SEASON 01</div>
+            <div className="auth-display-title">THE ARENA<br/><em>IS YOURS.</em></div>
+            <p className="auth-showcase-copy">{tx("Build your rank. Find your squad. Turn every match into progress.","Rütbeni yükselt. Takımını bul. Her maçı gelişime dönüştür.")}</p>
+            <div className="auth-showcase-metrics">
+              <div><b>01—05</b><small>TEAM SIZES</small></div>
+              <div><b>RANKED</b><small>COMPETITIVE QUEUE</small></div>
+              <div><b>LIVE</b><small>PLAYER COMMUNITY</small></div>
+            </div>
+            <div className="auth-feature-grid">
+              <article className="auth-feature"><span><Swords size={18}/></span><div><b>{tx("Ranked matchmaking","Dereceli eşleşme")}</b><small>{tx("Find players at your level","Seviyene uygun oyuncuları bul")}</small></div><ChevronRight size={16}/></article>
+              <article className="auth-feature"><span><Trophy size={18}/></span><div><b>{tx("Competitive ladder","Rekabetçi sıralama")}</b><small>{tx("Track your ELO and results","ELO ve sonuçlarını takip et")}</small></div><ChevronRight size={16}/></article>
+              <article className="auth-feature"><span><BrainCircuit size={18}/></span><div><b>{tx("AI match review","AI maç analizi")}</b><small>{tx("Review your match screenshots","Maç ekran görüntülerini incele")}</small></div><ChevronRight size={16}/></article>
+            </div>
+            <div className="auth-showcase-foot"><span className="green-dot"/> BUILT FOR THE COMPETITIVE COMMUNITY <span className="auth-foot-code">CF / 001</span></div>
+          </div>
+          <div className="auth-card auth-card-premium auth-panel-v2">
+            <div className="auth-panel-heading">
+              <span className="auth-panel-mark"><Flame size={22}/></span>
+              <div><span className="eyebrow">PLAYER ACCESS</span><h2>{authMode==="in"?tx("WELCOME BACK","TEKRAR HOŞ GELDİN") : tx("JOIN THE ARENA","ARENAYA KATIL")}</h2><p>{tx("Sign in to continue your competitive journey.","Rekabet yolculuğuna devam etmek için giriş yap.")}</p></div>
+            </div>
+            <label className="auth-language-label">{tx("LANGUAGE","DİL")}</label>
+            <select aria-label="Choose language" className="cf-input auth-language-input" value={language} onChange={e=>changeLanguage(e.target.value as "en"|"tr")}><option value="en">English</option><option value="tr">Türkçe</option></select>
+            <div className="auth-tabs"><button className={authMode==="in"?"selected":""} onClick={()=>setAuthMode("in")}>{tx("SIGN IN","GİRİŞ YAP")}</button><button className={authMode==="up"?"selected":""} onClick={()=>setAuthMode("up")}>{tx("CREATE ACCOUNT","HESAP OLUŞTUR")}</button></div>
+            {authMode==="up" && <label className="auth-field"><span>{tx("PLAYER NAME","OYUNCU ADI")}</span><input className="cf-input" placeholder={tx("Your player name","Oyuncu adın")} value={username} onChange={e=>setUsername(e.target.value)} maxLength={20}/></label>}
+            <label className="auth-field"><span>{tx("EMAIL ADDRESS","E-POSTA ADRESİ")}</span><input className="cf-input" type="email" autoComplete="email" placeholder="name@example.com" value={email} onChange={e=>setEmail(e.target.value)}/></label>
+            <label className="auth-field"><span>{tx("PASSWORD","ŞİFRE")}</span><input className="cf-input" type="password" autoComplete={authMode==="in"?"current-password":"new-password"} placeholder={tx("At least 6 characters","En az 6 karakter")} value={password} onChange={e=>setPassword(e.target.value)}/></label>
+            <button className="btn-primary full auth-submit-v2" disabled={!configured||busy||!email||password.length<6||(authMode==="up"&&username.trim().length<3)} onClick={authenticate}>{busy?tx("PLEASE WAIT","LÜTFEN BEKLE"):authMode==="in"?tx("ENTER THE ARENA","ARENAYA GİR"):tx("CREATE PLAYER ACCOUNT","OYUNCU HESABI OLUŞTUR")} <ChevronRight size={18}/></button>
+            {!configured && <p className="muted small">{tx("Account access is not configured yet. Add the Supabase URL and publishable key in Vercel environment variables.","Hesap erişimi henüz yapılandırılmadı. Vercel ortam değişkenlerine Supabase URL ve publishable key ekle.")}</p>}
+            <div className="auth-secure-note"><ShieldCheck size={15}/><span>{tx("Protected account access","Korumalı hesap erişimi")}<small>{tx("Authentication secured by Supabase","Supabase ile güvenli kimlik doğrulama")}</small></span></div>
           </div>
         </section>
       ) : (
@@ -1168,7 +1187,7 @@ export default function Home() {
 
       </div>
 
-      <footer className="footer"><span>COUNTERFLAME <b>FACEIT</b> · V23000 UI EDITION</span><span>COMMUNITY PROJECT · NOT AFFILIATED WITH ANY GAME PUBLISHER</span></footer>
+      <footer className="footer"><span>COUNTERFLAME <b>FACEIT</b> · V24000 UI EDITION</span><span>COMMUNITY PROJECT · NOT AFFILIATED WITH ANY GAME PUBLISHER</span></footer>
     </main>
   );
 }
