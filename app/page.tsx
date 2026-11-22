@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import {
-  Activity, ArrowUpRight, Bell, ChevronDown, ChevronRight, CircleHelp,
+  Activity, ArrowUpRight, Bell, ChevronDown, ChevronRight,
   Crosshair, Flame, Gamepad2, Globe2, LayoutDashboard, Medal, Menu,
-  Search, Settings, ShieldCheck, Swords, Trophy, Users, X, Zap
+  Search, Settings, ShieldCheck, Swords, Trophy, Users, X
 } from "lucide-react";
 
 type Section = "Overview" | "Play" | "Rankings" | "Teams" | "Statistics" | "Profile" | "Settings";
