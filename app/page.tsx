@@ -88,6 +88,7 @@ export default function Home() {
   const [adminUnlocked, setAdminUnlocked] = useState(false);
   const tx = (en: string, tr: string) => language === "tr" ? tr : en;
   const isDev = (name?: string | null) => (name || "").trim().toLowerCase() === "lexf19";
+  const [showWelcome, setShowWelcome] = useState(false);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -277,6 +278,10 @@ export default function Home() {
     const { data: chat } = await supabase.from("cf_match_messages")
       .select("*").eq("match_id", id).order("created_at", { ascending: true }).limit(100);
     setMessages((chat || []) as ChatMessage[]);
+  }, []);
+
+  useEffect(() => {
+    if (window.localStorage.getItem("cf-welcome-done") !== "1") setShowWelcome(true);
   }, []);
 
   useEffect(() => {
@@ -892,6 +897,8 @@ export default function Home() {
       </div>}
 
       {notice && <div className="notice"><span>{notice}</span><button onClick={() => setNotice("")}><X size={16}/></button></div>}
+
+      {showWelcome && <div className="welcome-overlay" role="dialog" aria-modal="true" aria-labelledby="welcome-title"><div className="welcome-card"><div className="welcome-mark"><Flame size={27}/></div><span className="eyebrow">COUNTERFLAME / PLAYER BRIEFING</span><h2 id="welcome-title">WELCOME TO <em>THE ARENA.</em></h2><p>Your competitive space is ready. Find your next match, build your ELO and climb the leaderboard.</p><div className="welcome-divider"><span/> SEASON 01 · BETA <span/></div><button className="btn-primary welcome-done" onClick={() => { window.localStorage.setItem("cf-welcome-done","1"); setShowWelcome(false); }}>DONE <CheckCircle2 size={16}/></button><small>You will only see this message once.</small></div></div>}
 
       {showAdminLogin && <div className="admin-login-overlay"><div className="admin-login-card"><button className="admin-login-close" onClick={() => setShowAdminLogin(false)} aria-label="Close"><X size={18}/></button><span className="eyebrow">COUNTERFLAME CONTROL</span><h2>ADMIN LOGIN</h2><p>Enter the administrator password to continue.</p><input className="cf-input" type="password" autoComplete="current-password" placeholder="Admin password" value={adminPasswordInput} onChange={e => setAdminPasswordInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") void loginAdmin(); }}/><button className="btn-primary full" disabled={!adminPasswordInput || adminLoginBusy} onClick={() => void loginAdmin()}>{adminLoginBusy ? "CHECKING…" : "LOGIN TO ADMIN"} <ShieldCheck size={15}/></button><small>Password is checked on the server and is never stored in the browser.</small></div></div>}
 
