@@ -9,12 +9,13 @@ const features = [
   ["04", "TEAMS & COMMUNITY", "Play together and grow with the community."],
 ];
 
-type Stage = "loading" | "welcome" | "start" | "login";
+type Stage = "loading" | "welcome" | "start" | "login" | "greeting" | "home";
 
 export default function Home() {
   const [stage, setStage] = useState<Stage>("loading");
   const [loginMode, setLoginMode] = useState<"signin" | "signup">("signin");
   const [notice, setNotice] = useState("");
+  const [playerName, setPlayerName] = useState("");
 
   useEffect(() => {
     try {
@@ -31,7 +32,12 @@ export default function Home() {
 
   function submitLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setNotice("Your sign-in screen is ready. Account authentication will be enabled when the platform's login service is connected.");
+    const data = new FormData(event.currentTarget);
+    const typedName = String(data.get("username") || "").trim();
+    const emailName = String(data.get("email") || "").split("@")[0].trim();
+    setPlayerName(typedName || emailName || "PLAYER");
+    setNotice("");
+    setStage("greeting");
   }
 
   return (
@@ -64,7 +70,7 @@ export default function Home() {
       </section>
       <footer className="footer"><span>COUNTERFLAME FACEIT</span><span>BUILT FOR COMPETITION <b>✦</b></span></footer>
 
-      {stage !== "loading" && stage !== "login" && (
+      {stage !== "loading" && stage !== "login" && stage !== "greeting" && stage !== "home" && (
         <div className="intro-backdrop" role="dialog" aria-modal="true">
           {stage === "welcome" ? (
             <section className="intro-card">
@@ -92,6 +98,29 @@ export default function Home() {
               <button className="text-back" onClick={() => setStage("welcome")}>BACK</button>
             </section>
           )}
+        </div>
+      )}
+
+      {stage === "greeting" && (
+        <div className="player-welcome" role="status" aria-live="polite">
+          <div className="welcome-vignette" />
+          <div className="welcome-grid" />
+          <div className="welcome-logo-halo">
+            <div className="welcome-logo-ring ring-one" />
+            <div className="welcome-logo-ring ring-two" />
+            <div className="welcome-logo-ring ring-three" />
+            <img src="/counterflame-logo.svg" alt="" />
+          </div>
+          <div className="welcome-content">
+            <p className="welcome-kicker">COUNTER FLAME // PLAYER ACCESS</p>
+            <h1>WELCOME</h1>
+            <div className="welcome-player">{playerName}</div>
+            <div className="welcome-divider"><span /></div>
+            <p className="welcome-caption">YOUR ARENA. YOUR MOMENT. YOUR LEGACY.</p>
+            <button className="welcome-enter" onClick={() => setStage("home")}>ENTER THE PLATFORM <span>↗</span></button>
+          </div>
+          <div className="welcome-corner welcome-corner-tl">CF / 001</div>
+          <div className="welcome-corner welcome-corner-br">COMPETE WITH HONOR</div>
         </div>
       )}
 
