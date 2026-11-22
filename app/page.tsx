@@ -1,151 +1,134 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { useState } from "react";
 import {
-  Activity, ArrowDownRight, ArrowUpRight, Bell, ChevronRight, CircleHelp,
-  Crosshair, Flame, Gamepad2, LayoutDashboard, Medal, Search, Settings,
-  ShieldCheck, Swords, Trophy, Users, WalletCards, Zap
+  Activity, ArrowUpRight, Bell, ChevronDown, ChevronRight, CircleHelp,
+  Crosshair, Flame, Gamepad2, Globe2, LayoutDashboard, Medal, Menu,
+  Search, Settings, ShieldCheck, Swords, Trophy, Users, X, Zap
 } from "lucide-react";
 
-const features = [
-  ["01", "MATCHMAKING", "Find competitive matches and build your record."],
-  ["02", "RANKINGS", "Track your progress on the player leaderboard."],
-  ["03", "PLAYER STATS", "Follow your performance and match history."],
-  ["04", "TEAMS & COMMUNITY", "Play together and grow with the community."],
-];
-
-const navigation = [
-  { label: "Home", icon: LayoutDashboard },
+type Section = "Overview" | "Play" | "Rankings" | "Teams" | "Statistics" | "Profile" | "Settings";
+const nav: { label: Section; icon: typeof LayoutDashboard }[] = [
+  { label: "Overview", icon: LayoutDashboard },
   { label: "Play", icon: Gamepad2 },
   { label: "Rankings", icon: Trophy },
   { label: "Teams", icon: Users },
   { label: "Statistics", icon: Activity },
 ];
+const modes = [
+  { id: "1v1", name: "DUEL", detail: "One player. One opponent." },
+  { id: "2v2", name: "DOUBLES", detail: "Two-player team format." },
+  { id: "3v3", name: "TRIOS", detail: "Three-player team format." },
+  { id: "4v4", name: "SQUAD", detail: "Four-player team format." },
+  { id: "5v5", name: "COMPETITIVE", detail: "The classic full team." },
+];
 
-type Stage = "loading" | "welcome" | "start" | "login" | "greeting" | "home";
-
-function Dashboard({ playerName }: { playerName: string }) {
-  const [active, setActive] = useState("Home");
-  const [notice, setNotice] = useState("");
-  const [mode, setMode] = useState("5v5");
-
-  const sectionCopy: Record<string, { title: string; description: string }> = {
-    Home: { title: "YOUR ARENA STARTS HERE", description: "Everything you need for your competitive journey, in one place." },
-    Play: { title: "FIND YOUR NEXT MATCH", description: "Choose a format and get ready to compete. Matchmaking will be enabled when the queue service is connected." },
-    Rankings: { title: "CLIMB THE LADDER", description: "Player rankings will appear here when competitive match data is connected." },
-    Teams: { title: "BUILT TO WIN TOGETHER", description: "Create your squad and take on the arena. Team features are coming soon." },
-    Statistics: { title: "TRACK YOUR PROGRESS", description: "Your verified match history and performance data will live here." },
-  };
-
-  return (
-    <div className="dashboard">
-      <aside className="dash-sidebar">
-        <a className="dash-brand" href="/" aria-label="Counter Flame">
-          <img src="/counterflame-logo.svg" alt="" />
-          <span>COUNTER<span>FLAME</span><small>COMPETITIVE PLATFORM</small></span>
-        </a>
-        <div className="side-label">PLATFORM</div>
-        <nav className="side-nav" aria-label="Main navigation">
-          {navigation.map(({ label, icon: Icon }) => (
-            <button key={label} className={active === label ? "side-link active" : "side-link"} onClick={() => { setActive(label); setNotice(""); }}>
-              <Icon size={17} strokeWidth={1.8} /><span>{label}</span>{label === "Play" && <i className="nav-hot">NEW</i>}
-            </button>
-          ))}
-        </nav>
-        <div className="side-label side-label-bottom">PERSONAL</div>
-        <button className="side-link" onClick={() => setNotice("Player settings will be available with account profiles.")}><Settings size={17}/><span>Settings</span></button>
-        <button className="side-link" onClick={() => setNotice("Help center is being prepared.")}><CircleHelp size={17}/><span>Help center</span></button>
-        <div className="sidebar-bottom">
-          <div className="season-card"><div className="season-icon"><Flame size={17}/></div><b>SEASON ZERO</b><span>The arena is being prepared.</span><div className="season-progress"><i/></div><small>PLATFORM PREVIEW</small></div>
-          <div className="sidebar-user"><div className="user-avatar">{(playerName || "P").slice(0,1).toUpperCase()}</div><div><b>{playerName || "PLAYER"}</b><span>NEW CHALLENGER</span></div><button aria-label="Player settings" onClick={() => setNotice("Player settings will be available with account profiles.")}><Settings size={15}/></button></div>
-        </div>
-      </aside>
-
-      <main className="dash-main">
-        <header className="dash-topbar">
-          <div className="dash-breadcrumb"><span>COUNTER FLAME</span><ChevronRight size={13}/><b>{active.toUpperCase()}</b></div>
-          <div className="dash-top-actions"><div className="system-status"><i/> SYSTEM PREVIEW</div><button className="icon-button" aria-label="Search" onClick={() => setNotice("Search will be available when platform data is connected.")}><Search size={17}/></button><button className="icon-button notification-button" aria-label="Notifications" onClick={() => setNotice("You're all caught up. No notifications yet.")}><Bell size={17}/></button><div className="top-avatar">{(playerName || "P").slice(0,1).toUpperCase()}</div></div>
-        </header>
-
-        <div className="dash-content">
-          <div className="dash-welcome-row"><div><p className="dash-eyebrow"><span/> THE COMPETITIVE PLATFORM</p><h1>{active === "Home" ? <>WELCOME BACK, <em>{playerName || "PLAYER"}</em></> : sectionCopy[active].title}</h1><p className="dash-description">{sectionCopy[active].description}</p></div><div className="date-chip"><span>YOUR STATUS</span><b><i/> ROOKIE</b></div></div>
-
-          {active === "Home" ? (
-            <>
-              <section className="arena-banner">
-                <div className="banner-glow"/><div className="banner-mark">CF</div><div className="banner-content"><div className="banner-kicker"><span/> THE NEXT LEVEL BEGINS NOW</div><h2>ENTER THE<br/><strong>ARENA.</strong></h2><p>Find your team. Choose your mode. Make every round count.</p><button onClick={() => setActive("Play")}>EXPLORE GAME MODES <ChevronRight size={16}/></button></div><div className="banner-bottom"><span>COUNTER FLAME / SEASON 00</span><span>PLAY WITH PURPOSE <b>✦</b></span></div>
-              </section>
-
-              <div className="section-heading"><div><span className="section-index">01 / OVERVIEW</span><h2>YOUR DASHBOARD</h2></div><span className="muted-label">PLAYER SNAPSHOT</span></div>
-              <section className="stat-grid">
-                <article className="stat-card"><div className="stat-top"><span>CF ELO RATING</span><Medal size={17}/></div><div className="stat-value">—</div><div className="stat-foot">Awaiting first ranked match</div><div className="stat-mark"><ArrowUpRight size={19}/></div></article>
-                <article className="stat-card"><div className="stat-top"><span>MATCHES PLAYED</span><Swords size={17}/></div><div className="stat-value">—</div><div className="stat-foot">No match history yet</div><div className="stat-mark"><Crosshair size={19}/></div></article>
-                <article className="stat-card"><div className="stat-top"><span>WIN RATE</span><Activity size={17}/></div><div className="stat-value">—<small>%</small></div><div className="stat-foot">Calculated after your matches</div><div className="stat-mark"><ArrowDownRight size={19}/></div></article>
-                <article className="stat-card"><div className="stat-top"><span>GLOBAL RANK</span><Trophy size={17}/></div><div className="stat-value">—</div><div className="stat-foot">Play ranked to get placed</div><div className="stat-mark"><Zap size={19}/></div></article>
-              </section>
-
-              <div className="section-heading mode-heading"><div><span className="section-index">02 / CHOOSE YOUR FORMAT</span><h2>GAME MODES</h2></div><button className="text-action" onClick={() => setActive("Play")}>ALL MODES <ChevronRight size={15}/></button></div>
-              <section className="mode-grid">
-                {["1v1","2v2","3v3","4v4","5v5"].map((item, index) => <button key={item} className={mode === item ? "mode-card selected" : "mode-card"} onClick={() => {setMode(item);setNotice(item + " selected. Matchmaking will be available when the queue service is connected.");}}><span className="mode-number">0{index+1}</span><b>{item}</b><span className="mode-caption">{item === "1v1" ? "DUEL" : item === "5v5" ? "FULL TEAM" : "TEAM MATCH"}</span><span className="mode-arrow"><ChevronRight size={16}/></span></button>)}
-              </section>
-              <div className="lower-grid">
-                <section className="activity-panel"><div className="panel-heading"><div><span className="section-index">03 / YOUR JOURNEY</span><h3>RECENT ACTIVITY</h3></div><span className="empty-tag">NO DATA YET</span></div><div className="empty-state"><div className="empty-icon"><Activity size={22}/></div><b>YOUR STORY STARTS HERE</b><p>Your match history and recent results will appear here after you play.</p></div></section>
-                <section className="notice-panel"><div className="panel-heading"><div><span className="section-index">04 / THE LATEST</span><h3>ARENA BULLETIN</h3></div><span className="bulletin-dot"/></div><div className="bulletin-item"><span className="bulletin-label">WELCOME</span><b>Welcome to Counter Flame</b><p>Your competitive home is taking shape. More features are on the way.</p></div><div className="bulletin-footer"><ShieldCheck size={15}/> FAIR PLAY. STRONG COMMUNITY.</div></section>
-              </div>
-            </>
-          ) : (
-            <section className="placeholder-section"><div className="placeholder-emblem"><img src="/counterflame-logo.svg" alt="Counter Flame"/></div><span className="section-index">COUNTER FLAME / {active.toUpperCase()}</span><h2>{active === "Play" ? "CHOOSE YOUR BATTLE" : sectionCopy[active].title}</h2><p>{sectionCopy[active].description}</p>{active === "Play" && <div className="placeholder-modes">{["1v1","2v2","3v3","4v4","5v5"].map(item=><button key={item} className={mode===item?"selected":""} onClick={()=>setMode(item)}>{item}</button>)}</div>}<div className="coming-soon"><span/> {active === "Play" ? "MATCHMAKING SERVICE NOT CONNECTED" : "COMING TO THE ARENA"}</div><button className="return-home" onClick={()=>setActive("Home")}>BACK TO HOME <ChevronRight size={15}/></button></section>
-          )}
-          {notice && <div className="dash-toast" role="status">{notice}<button onClick={()=>setNotice("")}>×</button></div>}
-          <footer className="dash-footer"><span>© 2026 COUNTER FLAME FACEIT</span><span>BUILT FOR COMPETITION <b>✦</b></span></footer>
-        </div>
-      </main>
-    </div>
-  );
+function Brand({ compact = false }: { compact?: boolean }) {
+  return <div className={compact ? "brand brand-compact" : "brand"}>
+    <img src="/counterflame-logo.svg" alt="" />
+    <span>COUNTER<span className="brand-accent">FLAME</span><small>COMPETITIVE PLATFORM</small></span>
+  </div>;
 }
 
 export default function Home() {
-  const [stage, setStage] = useState<Stage>("loading");
-  const [loginMode, setLoginMode] = useState<"signin" | "signup">("signin");
+  const [entered, setEntered] = useState(false);
+  const [section, setSection] = useState<Section>("Overview");
+  const [mode, setMode] = useState("5v5");
   const [notice, setNotice] = useState("");
-  const [playerName, setPlayerName] = useState("");
+  const [mobileNav, setMobileNav] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
 
-  useEffect(() => {
-    try { setPlayerName(localStorage.getItem("cf-player-name") || ""); setStage(localStorage.getItem("cf-welcome-accepted") === "yes" ? "login" : "welcome"); }
-    catch { setStage("welcome"); }
-  }, []);
+  const notify = (message: string) => {
+    setNotice(message);
+    window.setTimeout(() => setNotice(""), 3200);
+  };
 
-  function acceptIntro() {
-    try { localStorage.setItem("cf-welcome-accepted", "yes"); } catch {}
-    setStage("start");
-  }
-  function submitLogin(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const typedName = String(data.get("username") || "").trim();
-    const emailName = String(data.get("email") || "").split("@")[0].trim();
-    const name = typedName || emailName || "PLAYER";
-    setPlayerName(name);
-    try { localStorage.setItem("cf-player-name", name); } catch {}
-    setNotice("");
-    setStage("greeting");
-  }
+  if (!entered) return <main className="gate">
+    <div className="gate-grid" />
+    <div className="gate-glow" />
+    <header className="gate-header"><Brand compact /><span className="gate-version"><i /> PLATFORM PREVIEW</span></header>
+    <section className="gate-content">
+      <div className="gate-copy">
+        <div className="eyebrow"><span /> BUILT FOR THE COMPETITIVE</div>
+        <h1>PROVE<br />YOUR <em>FIRE.</em></h1>
+        <p className="gate-lead">A new home for competitive Counter-Strike. Find your level, build your squad and earn your place.</p>
+        <button className="primary-button gate-cta" onClick={() => setEntered(true)}>ENTER THE ARENA <ArrowUpRight size={17} /></button>
+        <div className="gate-meta"><span><ShieldCheck size={14}/> FAIR PLAY FIRST</span><span><Globe2 size={14}/> BUILT FOR PLAYERS</span></div>
+      </div>
+      <div className="gate-art" aria-hidden="true">
+        <div className="art-ring ring-one" /><div className="art-ring ring-two" />
+        <div className="art-orbit"><span /><span /><span /></div>
+        <img src="/counterflame-logo.svg" alt="" />
+        <div className="art-caption"><b>CF / 001</b><span>THE NEXT ROUND STARTS HERE</span></div>
+      </div>
+    </section>
+    <footer className="gate-footer"><span>COUNTER FLAME © 2026</span><span>COMPETE WITH PURPOSE <b>✦</b></span></footer>
+  </main>;
 
-  if (stage === "loading") return <main className="app-loading" aria-label="Loading Counter Flame"><div className="loading-emblem"><img src="/counterflame-logo.svg" alt="Counter Flame"/></div><p>COUNTER <b>FLAME</b></p><span>PREPARING YOUR ARENA</span><i/></main>;
-  if (stage === "home") return <Dashboard playerName={playerName || "PLAYER"}/>;
+  const titles: Record<Section, { kicker: string; title: string; desc: string }> = {
+    Overview: { kicker: "COMMAND CENTER", title: "YOUR ARENA.", desc: "Your competitive journey starts here. Everything in one place." },
+    Play: { kicker: "MATCHMAKING", title: "FIND YOUR MATCH.", desc: "Choose your format. Your next challenge is waiting." },
+    Rankings: { kicker: "GLOBAL LEADERBOARD", title: "THE CLIMB.", desc: "A fair ranking system built around verified competitive results." },
+    Teams: { kicker: "SQUAD MANAGEMENT", title: "PLAY TOGETHER.", desc: "Build a roster, invite teammates and compete as one." },
+    Statistics: { kicker: "PERFORMANCE CENTER", title: "THE NUMBERS.", desc: "Understand your performance with clear, meaningful statistics." },
+    Profile: { kicker: "PLAYER ID", title: "YOUR PROFILE.", desc: "Your identity and competitive record." },
+    Settings: { kicker: "PREFERENCES", title: "YOUR SETTINGS.", desc: "Manage your platform preferences." },
+  };
 
-  return (
-    <main className="site-shell">
-      <header className="topbar"><a className="brand" href="/" aria-label="Counter Flame home"><img src="/counterflame-logo.svg" alt=""/><span>COUNTER<span>FLAME</span><small>FACEIT</small></span></a><div className="topbar-right"><i/> COMPETITIVE GAMING PLATFORM</div></header>
-      <section className="hero"><div className="hero-orbit"/><p className="eyebrow">WELCOME TO THE ARENA</p><h1>PLAY WITH<br/><span>PASSION.</span></h1><p className="hero-copy">A competitive home for players who want to improve, compete and make their mark.</p><div className="hero-line"><span/></div><p className="hero-note">YOUR GAME. YOUR RANK. YOUR LEGACY.</p></section>
-      <section className="feature-grid" aria-label="Platform features">{features.map(([number,title,description])=><article className="feature" key={number}><span className="feature-number">{number}</span><h2>{title}</h2><p>{description}</p></article>)}</section>
-      <footer className="footer"><span>COUNTERFLAME FACEIT</span><span>BUILT FOR COMPETITION <b>✦</b></span></footer>
+  const choose = (item: Section) => { setSection(item); setMobileNav(false); setNotice(""); };
 
-      {(stage === "welcome" || stage === "start") && <div className="intro-backdrop" role="dialog" aria-modal="true">{stage === "welcome" ? <section className="intro-card"><div className="card-topline"><span>OFFICIAL PLATFORM NOTICE</span><span className="live-dot">● ONLINE</span></div><div className="intro-logo"><img src="/counterflame-logo.svg" alt="Counter Flame emblem"/></div><p className="intro-overline">WELCOME TO THE ARENA</p><h2>COUNTER <span>FLAME</span></h2><div className="faceit-label">F A C E I T</div><div className="orange-rule"/><h3>Welcome to Counter Flame FACEIT!</h3><p className="intro-copy">Our goal is to create a competitive gaming platform where players can challenge themselves, improve their skills and compete together.</p><p className="intro-copy">Discover matchmaking, player rankings, statistics, teams and a growing community — all in one place. We are constantly working to make your experience smoother, fairer and better.</p><div className="intro-features">{["MATCHMAKING","RANKINGS","STATISTICS","TEAMS","COMMUNITY"].map(item=><span key={item}>{item}</span>)}</div><p className="thanks">Thank you for being part of <b>Counter Flame.</b></p><button className="understand-button" onClick={acceptIntro}>I UNDERSTAND <span>→</span></button><p className="card-foot">COMPETE WITH RESPECT · PLAY WITH PASSION</p></section> : <section className="start-card"><img className="start-emblem" src="/counterflame-logo.svg" alt="Counter Flame emblem"/><p className="intro-overline">THE ARENA IS WAITING</p><h2>READY TO <span>ENTER?</span></h2><p>Your competition. Your journey. It starts here.</p><button className="understand-button" onClick={()=>setStage("login")}>ENTER THE ARENA <span>→</span></button><button className="text-back" onClick={()=>setStage("welcome")}>BACK</button></section>}</div>}
+  return <main className="app-shell">
+    <aside className={mobileNav ? "sidebar sidebar-open" : "sidebar"}>
+      <div className="sidebar-head"><Brand /><button className="mobile-close" onClick={() => setMobileNav(false)} aria-label="Close menu"><X size={18}/></button></div>
+      <div className="nav-caption">PLATFORM</div>
+      <nav className="main-nav" aria-label="Main navigation">
+        {nav.map(({ label, icon: Icon }) => <button key={label} className={section === label ? "nav-item active" : "nav-item"} onClick={() => choose(label)}><Icon size={17}/><span>{label}</span>{label === "Play" && <i className="nav-tag">LIVE SOON</i>}</button>)}
+      </nav>
+      <div className="nav-caption nav-caption-spaced">ACCOUNT</div>
+      <button className={section === "Profile" ? "nav-item active" : "nav-item"} onClick={() => choose("Profile")}><Medal size={17}/><span>My Profile</span></button>
+      <button className={section === "Settings" ? "nav-item active" : "nav-item"} onClick={() => choose("Settings")}><Settings size={17}/><span>Settings</span></button>
+      <div className="sidebar-bottom">
+        <div className="season-box"><div className="season-top"><Flame size={16}/><span>SEASON 00</span><i>PRE-SEASON</i></div><b>THE FOUNDATION</b><p>The arena is getting ready.</p><div className="season-line"><i/></div></div>
+        <button className="player-chip" onClick={() => choose("Profile")}><span className="player-avatar">P</span><span className="player-details"><b>PLAYER ONE</b><small>UNRANKED</small></span><ChevronDown size={15}/></button>
+      </div>
+    </aside>
+    {mobileNav && <button className="mobile-scrim" onClick={() => setMobileNav(false)} aria-label="Close navigation" />}
+    <section className="workspace">
+      <header className="topbar">
+        <div className="topbar-left"><button className="mobile-menu" onClick={() => setMobileNav(true)} aria-label="Open menu"><Menu size={19}/></button><span>COUNTER FLAME</span><ChevronRight size={13}/><b>{section.toUpperCase()}</b></div>
+        <div className="topbar-right"><span className="online-state"><i/> PREVIEW ENVIRONMENT</span><button className="top-icon" aria-label="Search" onClick={() => notify("Search will be enabled when player data is connected.")}><Search size={17}/></button><button className="top-icon" aria-label="Notifications" onClick={() => notify("No notifications yet.")}><Bell size={17}/></button><button className="top-user" onClick={() => choose("Profile")}>P</button></div>
+      </header>
+      <div className="page-content">
+        <div className="page-heading"><div><div className="eyebrow"><span/>{titles[section].kicker}</div><h1>{titles[section].title}</h1><p>{titles[section].desc}</p></div><div className="region-pill"><Globe2 size={14}/><span>EUROPE</span><i/></div></div>
 
-      {stage === "greeting" && <div className="player-welcome" role="status" aria-live="polite"><div className="welcome-vignette"/><div className="welcome-grid"/><div className="welcome-logo-halo"><div className="welcome-logo-ring ring-one"/><div className="welcome-logo-ring ring-two"/><div className="welcome-logo-ring ring-three"/><img src="/counterflame-logo.svg" alt=""/></div><div className="welcome-content"><p className="welcome-kicker">COUNTER FLAME // PLAYER ACCESS</p><h1>WELCOME</h1><div className="welcome-player">{playerName}</div><div className="welcome-divider"><span/></div><p className="welcome-caption">YOUR ARENA. YOUR MOMENT. YOUR LEGACY.</p><button className="welcome-enter" onClick={()=>setStage("home")}>ENTER THE PLATFORM <span>↗</span></button></div><div className="welcome-corner welcome-corner-tl">CF / 001</div><div className="welcome-corner welcome-corner-br">COMPETE WITH HONOR</div></div>}
+        {section === "Overview" && <>
+          <section className="hero-panel"><div className="hero-text"><div className="hero-kicker"><span/> WELCOME TO THE NEXT ROUND</div><h2>MAKE<br/><em>YOUR MARK.</em></h2><p>Queue up with players at your level. Every match is a chance to prove yourself.</p><button className="primary-button" onClick={() => choose("Play")}>EXPLORE GAME MODES <ChevronRight size={16}/></button></div><div className="hero-symbol">CF</div><div className="hero-foot"><span>COUNTER FLAME / SEASON 00</span><span>BUILT TO COMPETE <b>✦</b></span></div></section>
+          <div className="section-title"><div><span>01 / YOUR PROGRESS</span><h2>PLAYER OVERVIEW</h2></div><small>NO MATCH DATA YET</small></div>
+          <div className="stats-grid">
+            <article className="stat-tile"><div><span>CF ELO</span><Medal size={17}/></div><strong>—</strong><small>Complete ranked matches to get rated</small></article>
+            <article className="stat-tile"><div><span>MATCHES</span><Swords size={17}/></div><strong>—</strong><small>Your match history will appear here</small></article>
+            <article className="stat-tile"><div><span>WIN RATE</span><Activity size={17}/></div><strong>—<i>%</i></strong><small>Calculated from completed matches</small></article>
+            <article className="stat-tile"><div><span>GLOBAL RANK</span><Trophy size={17}/></div><strong>—</strong><small>Earn your place on the ladder</small></article>
+          </div>
+          <div className="section-title section-title-spaced"><div><span>02 / CHOOSE YOUR FORMAT</span><h2>GAME MODES</h2></div><button className="subtle-link" onClick={() => choose("Play")}>VIEW ALL <ChevronRight size={14}/></button></div>
+          <div className="mode-grid">{modes.map((m, i) => <button key={m.id} className={mode === m.id ? "mode-tile selected" : "mode-tile"} onClick={() => {setMode(m.id);choose("Play");}}><span className="mode-index">0{i+1}</span><b>{m.id}</b><small>{m.name}</small><ChevronRight className="mode-chevron" size={16}/></button>)}</div>
+          <div className="bottom-grid"><section className="content-panel"><div className="panel-title"><div><span>03 / ACTIVITY</span><h3>RECENT MATCHES</h3></div><small>EMPTY</small></div><div className="empty-panel"><div><Activity size={20}/></div><b>YOUR STORY STARTS HERE</b><p>Completed matches and results will show up here.</p></div></section><section className="content-panel bulletin"><div className="panel-title"><div><span>04 / ANNOUNCEMENTS</span><h3>ARENA BULLETIN</h3></div><i/></div><div className="bulletin-entry"><small>WELCOME</small><b>The arena is taking shape.</b><p>We are building a competitive space focused on fair play and great matches.</p></div><div className="bulletin-signoff"><ShieldCheck size={14}/> PLAY FAIR. PLAY TOGETHER.</div></section></div>
+        </>}
 
-      {stage === "login" && <div className="login-screen"><div className="login-ambient"/><section className="login-layout"><div className="login-brand-panel"><img className="login-emblem" src="/counterflame-logo.svg" alt="Counter Flame emblem"/><p className="intro-overline">WELCOME TO THE ARENA</p><h1>RISE<br/><span>ABOVE.</span></h1><p className="login-tagline">ONE PLATFORM. EVERY CHALLENGE.</p><div className="login-brand-line"/><p className="login-small">COUNTER FLAME FACEIT</p></div><div className="login-panel"><div className="login-panel-top"><span>PLAYER ACCESS</span><span className="live-dot">● SECURE AREA</span></div><div className="login-mini-brand"><img src="/counterflame-logo.svg" alt=""/><span>COUNTER <b>FLAME</b></span></div><h2>{loginMode === "signin" ? "WELCOME BACK" : "JOIN THE ARENA"}</h2><p className="login-subtitle">{loginMode === "signin" ? "Sign in to continue your journey." : "Create your player account to get started."}</p><div className="login-tabs"><button className={loginMode === "signin" ? "active" : ""} onClick={()=>{setLoginMode("signin");setNotice("");}}>SIGN IN</button><button className={loginMode === "signup" ? "active" : ""} onClick={()=>{setLoginMode("signup");setNotice("");}}>CREATE ACCOUNT</button></div><form className="login-form" onSubmit={submitLogin}>{loginMode === "signup" && <label>PLAYER NAME<input name="username" placeholder="Your player name" autoComplete="username" required/></label>}<label>EMAIL ADDRESS<input type="email" name="email" placeholder="name@example.com" autoComplete="email" required/></label><label>PASSWORD<input type="password" name="password" placeholder="Enter your password" autoComplete={loginMode === "signin" ? "current-password" : "new-password"} minLength={8} required/></label>{loginMode === "signin" && <button className="forgot-button" type="button" onClick={()=>setNotice("Password recovery will be available after account authentication is connected.")}>FORGOT PASSWORD?</button>}<button className="login-submit" type="submit">{loginMode === "signin" ? "SIGN IN" : "CREATE ACCOUNT"} <span>↗</span></button></form>{notice && <p className="login-notice" role="status">{notice}</p>}<p className="login-terms">BY CONTINUING, YOU AGREE TO PLAY FAIR AND RESPECT THE COMMUNITY.</p><button className="text-back login-back" onClick={()=>setStage("start")}>← BACK</button></div></section></div>}
-    </main>
-  );
+        {section === "Play" && <><div className="play-layout"><section className="play-main"><div className="section-title"><div><span>01 / SELECT A QUEUE</span><h2>CHOOSE YOUR MODE</h2></div><small>5 FORMATS</small></div><div className="play-mode-list">{modes.map((m, i) => <button key={m.id} className={mode === m.id ? "play-mode selected" : "play-mode"} onClick={() => setMode(m.id)}><span className="play-mode-num">0{i+1}</span><span className="play-mode-name"><b>{m.id}</b><small>{m.name} · {m.detail}</small></span><span className="mode-select">{mode === m.id ? "SELECTED" : "SELECT"}</span></button>)}</div><div className="queue-box"><div><span className="queue-label"><i/> MATCHMAKING STATUS</span><b>QUEUE SERVICE NOT CONNECTED</b><p>Matchmaking will become available when the queue backend is configured. No players or queue times are simulated.</p></div><button className="primary-button disabled-button" disabled>QUEUE UNAVAILABLE</button></div></section><aside className="play-aside"><div className="aside-icon"><Crosshair size={22}/></div><span>YOUR NEXT MATCH</span><h3>READY WHEN<br/>YOU ARE.</h3><p>Select a format to see its requirements and matchmaking status.</p><div className="aside-selected"><small>SELECTED FORMAT</small><b>{mode}</b></div></aside></div></>}
+
+        {section === "Rankings" && <EmptyFeature icon={<Trophy size={26}/>} title="THE LADDER IS WAITING." copy="Rankings will appear when verified match results and the rating system are connected." />}
+        {section === "Teams" && <EmptyFeature icon={<Users size={26}/>} title="YOUR SQUAD STARTS HERE." copy="Team creation, invites and rosters will be enabled with the team service." />}
+        {section === "Statistics" && <EmptyFeature icon={<Activity size={26}/>} title="EVERY ROUND COUNTS." copy="Your performance dashboard will be populated from completed match records." />}
+        {section === "Profile" && <EmptyFeature icon={<Medal size={26}/>} title="PLAYER PROFILE." copy="Account identity, avatar, ELO and match history will appear here after authentication is connected." />}
+        {section === "Settings" && <div className="settings-card"><div><span>ACCOUNT</span><b>Authentication is not connected</b><p>Account security and profile preferences will be available after Supabase Auth is configured.</p></div><div><span>INTERFACE</span><b>Language</b><p>English interface preview.</p></div><div><span>REGION</span><b>Europe</b><p>Matchmaking region selection will be available with the queue service.</p></div></div>}
+        <footer className="page-footer"><span>COUNTER FLAME © 2026</span><span>BUILT FOR COMPETITION <b>✦</b></span></footer>
+      </div>
+    </section>
+    {notice && <div className="toast" role="status">{notice}<button onClick={() => setNotice("")} aria-label="Dismiss">×</button></div>}
+  </main>;
+}
+
+function EmptyFeature({ icon, title, copy }: { icon: React.ReactNode; title: string; copy: string }) {
+  return <section className="feature-empty"><div className="feature-empty-icon">{icon}</div><span>COMING ONLINE</span><h2>{title}</h2><p>{copy}</p><div className="feature-empty-line"/></section>;
 }
